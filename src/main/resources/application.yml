@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: product-service
+
+  profiles:
+    active: dev
+
+  cloud:
+    openfeign:
+      circuitbreaker:
+        enabled: true
+
