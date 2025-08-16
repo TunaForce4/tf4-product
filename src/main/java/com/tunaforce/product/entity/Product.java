@@ -3,6 +3,7 @@ package com.tunaforce.product.entity;
 import com.tunaforce.product.common.entity.Timestamped;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -29,4 +30,12 @@ public class Product extends Timestamped {
 
     @Column(name = "quantity", nullable = false)
     private Integer quantity;
+
+    @Builder
+    public Product(UUID companyId, String name, Integer price, Integer quantity) {
+        this.companyId = companyId;
+        this.name = name;
+        this.price = price;
+        this.quantity = quantity;
+    }
 }
