@@ -9,10 +9,4 @@ import java.util.UUID;
 
 @FeignClient(name = "hub-service", fallbackFactory = HubFeignFallbackFactory.class)
 public interface HubFeignClient {
-
-    @GetMapping("/hubs/{hubId}/companies/{companyId}/exists")
-    void existsByIdWithCompany(
-            @PathVariable UUID hubId,
-            @RequestParam UUID companyId
-    );
 }
