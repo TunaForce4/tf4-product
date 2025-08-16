@@ -7,10 +7,10 @@ import jakarta.validation.constraints.NotNull;
 import java.util.UUID;
 
 public record ProductCreateRequestDto(
-        @NotNull(message = "허브 id 값을 지정해주세요.")
+        @NotNull(message = "허브 id 값을 입력해주세요.")
         UUID hubId,
 
-        @NotNull(message = "업체 id 값을 지정해주세요.")
+        @NotNull(message = "업체 id 값을 입력해주세요.")
         UUID companyId,
 
         @NotBlank(message = "등록 상품 이름을 입력해주세요.")
