@@ -30,6 +30,7 @@ public class ProductService {
 
         // persist a product
         Product product = Product.builder()
+                .hubId(request.hubId())
                 .companyId(request.companyId())
                 .name(request.name())
                 .price(request.price())
