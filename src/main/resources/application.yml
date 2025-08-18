@@ -10,3 +10,7 @@ spring:
       circuitbreaker:
         enabled: true
 
+eureka:
+  client:
+    service-url:
+      defaultZone: http://0.0.0.0:3310/eureka
