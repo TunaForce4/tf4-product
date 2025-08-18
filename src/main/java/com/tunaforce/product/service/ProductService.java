@@ -19,14 +19,14 @@ public class ProductService {
 
     public void createProduct(ProductCreateRequestDto request, UUID userId) {
         // 유저 역할에 따라 상품 생성에 요청된 허브 또는 업체와 로그인한 유저의 허브 또는 업체와의 관계가 유효한지 검증
-        AuthCreateProductCheckUserAffiliationRequestDto authRequestDto =
-                new AuthCreateProductCheckUserAffiliationRequestDto(
-                        userId,
-                        request.hubId(),
-                        request.companyId()
-                );
-
-        authFeignClient.checkUserAffiliation(authRequestDto);
+//        AuthCreateProductCheckUserAffiliationRequestDto authRequestDto =
+//                new AuthCreateProductCheckUserAffiliationRequestDto(
+//                        userId,
+//                        request.hubId(),
+//                        request.companyId()
+//                );
+//
+//        authFeignClient.checkUserAffiliation(authRequestDto);
 
         // persist a product
         Product product = Product.builder()
