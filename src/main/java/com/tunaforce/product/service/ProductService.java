@@ -59,6 +59,61 @@ public class ProductService {
         productJpaRepository.save(product);
     }
 
+    /**
+     * 허브 소속 업체들이 등록한 상품 페이지네이션
+     */
+    public ProductFindPageResponseDto findProductPageByHub(
+            Pageable pageable,
+            UUID hubId,
+            String productName,
+            UUID userId,
+            UserRole userRole
+    ) {
+
+        Page<ProductDetailsQuerydslResponseDto> page
+                = findHubProductPageByAuthority(pageable, hubId, productName, userId, userRole);
+
+        // 조회한 레코드에서 허브와 업체 ID 중복 제거
+        Set<UUID> hubSet = page.getContent().stream()
+                .map(ProductDetailsQuerydslResponseDto::hubId)
+                .collect(Collectors.toSet());
+
+        Set<UUID> companySet = page.getContent().stream()
+                .map(ProductDetailsQuerydslResponseDto::companyId)
+                .collect(Collectors.toSet());
+
+        // 허브와 업체 정보(이름) 조회
+        Map<UUID, String> hubs = getHubs(hubSet);
+        Map<UUID, String> companies = getCompanies(companySet);
+
+        return ProductFindPageResponseDto.from(page, hubs, companies);
+    }
+
+    private Page<ProductDetailsQuerydslResponseDto> findHubProductPageByAuthority(
+            Pageable pageable,
+            UUID hubId,
+            String productName,
+            UUID userId,
+            UserRole userRole
+    ) {
+        if (userRole.equals(UserRole.COMPANY)) {
+            throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
+        }
+
+        if (userRole.equals(UserRole.HUB)) {
+            HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
+            validateUuidMatch(hubId, hubInfo.hubId());
+        }
+
+        return productQuerydslRepository.findPage(pageable, hubId, null, productName);
+    }
+
+    public void validateUuidMatch(UUID expectedId, UUID actualId) {
+        if (!expectedId.equals(actualId)) {
+            throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
+        }
+    }
+
     public ProductFindPageResponseDto findProductPage(
             Pageable pageable,
             String productName,

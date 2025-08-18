@@ -48,4 +48,21 @@ public class ProductController {
         return ResponseEntity.ok()
                 .body(productPage);
     }
+
+    @GetMapping("/hubs/{hubId}")
+    public ResponseEntity<ProductFindPageResponseDto> findProductsByHubManager(
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @PathVariable UUID hubId,
+            @RequestParam(required = false) String productName,
+            @RequestHeader("X-USER-ID") UUID userId, // FIXME 임시
+            @RequestHeader("X-USER-ROLE") String userRole // FIXME 임시
+    ) {
+        SortType.validate(pageable.getSort());
+
+        ProductFindPageResponseDto productPage
+                = productService.findProductPageByHub(pageable, hubId, productName, userId, UserRole.of(userRole));
+
+        return ResponseEntity.ok()
+                .body(productPage);
+    }
 }
