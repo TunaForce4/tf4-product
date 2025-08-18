@@ -23,7 +23,7 @@ public class CompanyFeignFallbackFactory implements FallbackFactory<CompanyFeign
             }
 
             @Override
-            public CompanyFindInfoListResponse findCompanyByCompanyIds(List<UUID> companyIds) {
+            public CompanyFindInfoListResponse findCompanyInfoListByCompanyIds(List<UUID> companyIds) {
                 // TODO throw exceptions
                 return null;
             }
