@@ -2,6 +2,7 @@ package com.tunaforce.product.controller;
 
 import com.tunaforce.product.dto.request.ProductCreateRequestDto;
 import com.tunaforce.product.dto.response.ProductFindPageResponseDto;
+import com.tunaforce.product.entity.SortType;
 import com.tunaforce.product.entity.UserRole;
 import com.tunaforce.product.service.ProductService;
 import jakarta.validation.Valid;
@@ -34,11 +35,13 @@ public class ProductController {
 
     @GetMapping
     public ResponseEntity<ProductFindPageResponseDto> findProducts(
-            @PageableDefault(sort = {"createdAt,desc"}) Pageable pageable,
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String productName,
             @RequestHeader("X-USER-ID") UUID userId, // FIXME 임시
-            @RequestHeader("X-USER-ROLE") String userRole, // FIXME 임시
-            Sort sort) {
+            @RequestHeader("X-USER-ROLE") String userRole // FIXME 임시
+    ) {
+        SortType.validate(pageable.getSort());
+
         ProductFindPageResponseDto productPage
                 = productService.findProductPage(pageable, productName, userId, UserRole.of(userRole));
 
