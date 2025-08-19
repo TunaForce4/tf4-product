@@ -56,9 +56,10 @@ public class ProductController {
             @RequestHeader("X-USER-ROLE") String userRole // FIXME 임시
     ) {
         SortType.validate(pageable.getSort());
+        UserRole role = UserRole.of(userRole);
 
         ProductFindPageResponseDto data
-                = productService.findProductPageByHub(pageable, hubId, productName, userId, UserRole.of(userRole));
+                = productService.findProductPageByHub(pageable, hubId, productName, userId, role);
 
         return ResponseEntity.ok()
                 .body(data);
@@ -73,9 +74,10 @@ public class ProductController {
             @RequestHeader("X-USER-ROLE") String userRole // FIXME 임시
     ) {
         SortType.validate(pageable.getSort());
+        UserRole role = UserRole.of(userRole);
 
         ProductFindPageResponseDto data
-                = productService.findProductPageByCompany(pageable, companyId, productName, userId, UserRole.of(userRole));
+                = productService.findProductPageByCompany(pageable, companyId, productName, userId, role);
 
         return ResponseEntity.ok()
                 .body(data);
