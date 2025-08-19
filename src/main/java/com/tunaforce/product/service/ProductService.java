@@ -69,24 +69,26 @@ public class ProductService {
             UUID userId,
             UserRole userRole
     ) {
-
         Page<ProductDetailsQuerydslResponseDto> page
                 = findHubProductPageByAuthority(pageable, hubId, productName, userId, userRole);
 
-        // 조회한 레코드에서 허브와 업체 ID 중복 제거
-        Set<UUID> hubSet = page.getContent().stream()
-                .map(ProductDetailsQuerydslResponseDto::hubId)
-                .collect(Collectors.toSet());
+        return mapPageToResponse(page);
+    }
 
-        Set<UUID> companySet = page.getContent().stream()
-                .map(ProductDetailsQuerydslResponseDto::companyId)
-                .collect(Collectors.toSet());
+    /**
+     * 허브 소속 업체들이 등록한 상품 페이지네이션
+     */
+    public ProductFindPageResponseDto findProductPageByCompany(
+            Pageable pageable,
+            UUID companyId,
+            String productName,
+            UUID userId,
+            UserRole userRole
+    ) {
+        Page<ProductDetailsQuerydslResponseDto> page
+                = findCompanyProductPageByAuthority(pageable, companyId, productName, userId, userRole);
 
-        // 허브와 업체 정보(이름) 조회
-        Map<UUID, String> hubs = getHubs(hubSet);
-        Map<UUID, String> companies = getCompanies(companySet);
-
-        return ProductFindPageResponseDto.from(page, hubs, companies);
+        return mapPageToResponse(page);
     }
 
     private Page<ProductDetailsQuerydslResponseDto> findHubProductPageByAuthority(
@@ -96,10 +98,12 @@ public class ProductService {
             UUID userId,
             UserRole userRole
     ) {
+        // 업체는 자신의 업체만 조회 가능
         if (userRole.equals(UserRole.COMPANY)) {
             throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
         }
 
+        // 로그인한 유저가 허브 담당자 일 때 요청한 허브에 접근 가능한지 확인
         if (userRole.equals(UserRole.HUB)) {
             HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
             validateUuidMatch(hubId, hubInfo.hubId());
@@ -108,10 +112,63 @@ public class ProductService {
         return productQuerydslRepository.findPage(pageable, hubId, null, productName);
     }
 
+    private Page<ProductDetailsQuerydslResponseDto> findCompanyProductPageByAuthority(
+            Pageable pageable,
+            UUID companyId,
+            String productName,
+            UUID userId,
+            UserRole userRole
+    ) {
+        // 로그인한 유저가 허브 담당자 일 때 요청한 업체가 소속 업체인지 확인
+        if (userRole.equals(UserRole.HUB)) {
+            HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
+            CompanyFindInfoListResponse companyInfos
+                    = companyFeignClient.findCompanyInfoListByCompanyIds(List.of(companyId));
+
+            CompanyFindInfoResponseDto companyInfo = companyInfos.data().stream().findFirst()
+                    .orElseThrow(() -> new CustomRuntimeException(ProductException.COMPANY_NOT_FOUND));
+
+            // 로그인한 유저의 허브가 요청한 업체의 담당 허브인지 확인
+            validateUuidMatch(hubInfo.hubId(), companyInfo.hubId());
+        }
+
+        // 로그인한 유저가 업체 담당자 일 때 자신의 업체인지 확인
+        if (userRole.equals(UserRole.COMPANY)) {
+            CompanyFindInfoResponseDto companyInfo = companyFeignClient.findCompanyInfoByUserId(userId);
+            validateUuidMatch(companyId, companyInfo.companyId());
+        }
+
+        return productQuerydslRepository.findPage(pageable, null, companyId, productName);
+    }
+
     public void validateUuidMatch(UUID expectedId, UUID actualId) {
         if (!expectedId.equals(actualId)) {
             throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
         }
+    }
+
+    public ProductFindPageResponseDto mapPageToResponse(Page<ProductDetailsQuerydslResponseDto> page) {
+        // 조회한 레코드에서 허브와 업체 ID 중복 제거
+        Set<UUID> hubSet = getUniqueHubIdSet(page);
+        Set<UUID> companySet = getUniqueCompanyIdSet(page);
+
+        // 허브와 업체 정보(이름) 조회
+        Map<UUID, String> hubs = getHubs(hubSet);
+        Map<UUID, String> companies = getCompanies(companySet);
+
+        return ProductFindPageResponseDto.from(page, hubs, companies);
+    }
+
+    private static Set<UUID> getUniqueCompanyIdSet(Page<ProductDetailsQuerydslResponseDto> page) {
+        return page.getContent().stream()
+                .map(ProductDetailsQuerydslResponseDto::companyId)
+                .collect(Collectors.toSet());
+    }
+
+    private static Set<UUID> getUniqueHubIdSet(Page<ProductDetailsQuerydslResponseDto> page) {
+        return page.getContent().stream()
+                .map(ProductDetailsQuerydslResponseDto::hubId)
+                .collect(Collectors.toSet());
     }
 
     public ProductFindPageResponseDto findProductPage(

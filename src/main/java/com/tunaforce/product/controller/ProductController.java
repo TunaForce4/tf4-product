@@ -59,10 +59,27 @@ public class ProductController {
     ) {
         SortType.validate(pageable.getSort());
 
-        ProductFindPageResponseDto productPage
+        ProductFindPageResponseDto data
                 = productService.findProductPageByHub(pageable, hubId, productName, userId, UserRole.of(userRole));
 
         return ResponseEntity.ok()
-                .body(productPage);
+                .body(data);
+    }
+
+    @GetMapping("/companies/{companyId}")
+    public ResponseEntity<ProductFindPageResponseDto> findProductsByCompanyManager(
+            @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
+            @PathVariable UUID companyId,
+            @RequestParam(required = false) String productName,
+            @RequestHeader("X-USER-ID") UUID userId, // FIXME 임시
+            @RequestHeader("X-USER-ROLE") String userRole // FIXME 임시
+    ) {
+        SortType.validate(pageable.getSort());
+
+        ProductFindPageResponseDto data
+                = productService.findProductPageByCompany(pageable, companyId, productName, userId, UserRole.of(userRole));
+
+        return ResponseEntity.ok()
+                .body(data);
     }
 }

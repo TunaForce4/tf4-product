@@ -5,6 +5,8 @@ import java.util.UUID;
 public record CompanyFindInfoResponseDto(
         UUID companyId,
 
+        UUID hubId,
+
         String companyName
 ) {
 }
