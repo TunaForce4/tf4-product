@@ -114,16 +114,6 @@ public class ProductService {
             UUID userId,
             UserRole userRole
     ) {
-        // 배송 담당자는 상품 관리 목록은 조회 불가능
-        if (userRole.equals(UserRole.DELIVERY)) {
-            throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
-        }
-
-        // 업체는 자신의 업체만 조회 가능
-        if (userRole.equals(UserRole.COMPANY)) {
-            throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
-        }
-
         // 로그인한 유저가 허브 담당자 일 때 요청한 허브에 접근 가능한지 확인
         if (userRole.equals(UserRole.HUB)) {
             HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
@@ -143,11 +133,6 @@ public class ProductService {
             UUID userId,
             UserRole userRole
     ) {
-        // 배송 담당자는 상품 관리 목록은 조회 불가능
-        if (userRole.equals(UserRole.DELIVERY)) {
-            throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
-        }
-
         // 로그인한 유저가 허브 담당자 일 때 요청한 업체가 소속 업체인지 확인
         if (userRole.equals(UserRole.HUB)) {
             HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
