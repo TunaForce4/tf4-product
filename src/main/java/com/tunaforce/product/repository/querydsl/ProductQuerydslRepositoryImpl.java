@@ -2,6 +2,7 @@ package com.tunaforce.product.repository.querydsl;
 
 import com.querydsl.core.types.Order;
 import com.querydsl.core.types.OrderSpecifier;
+import com.querydsl.core.types.Predicate;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.impl.JPAQuery;
@@ -36,6 +37,13 @@ public class ProductQuerydslRepositoryImpl implements ProductQuerydslRepository 
             UUID companyId,
             String productName
     ) {
+        Predicate[] whereClause = {
+                eqHubId(hubId),
+                eqCompanyId(companyId),
+                eqProductName(productName),
+                product.deletedAt.isNull()
+        };
+
         // SELECT
         List<ProductDetailsQuerydslResponseDto> records = queryFactory
                 .select(new QProductDetailsQuerydslResponseDto(
@@ -49,12 +57,7 @@ public class ProductQuerydslRepositoryImpl implements ProductQuerydslRepository 
                         product.updatedAt
                 ))
                 .from(product)
-                .where(
-                        eqHubId(hubId),
-                        eqCompanyId(companyId),
-                        eqProductName(productName),
-                        product.deletedAt.isNull()
-                )
+                .where(whereClause)
                 .orderBy(getOrderSpecifiers(pageable.getSort()))
                 .offset(pageable.getOffset())
                 .limit(pageable.getPageSize())
@@ -63,12 +66,7 @@ public class ProductQuerydslRepositoryImpl implements ProductQuerydslRepository 
         // COUNT
         JPAQuery<Long> count = queryFactory
                 .select(product.count())
-                .where(
-                        eqHubId(hubId),
-                        eqCompanyId(companyId),
-                        eqProductName(productName),
-                        product.deletedAt.isNull()
-                )
+                .where(whereClause)
                 .from(product);
 
         return PageableExecutionUtils.getPage(records, pageable, count::fetchOne);
