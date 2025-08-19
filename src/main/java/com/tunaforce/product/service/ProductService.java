@@ -62,7 +62,7 @@ public class ProductService {
     /**
      * 주문 용 전체 상품 페이지네이션
      */
-    public ProductFindPageResponseDto findProductPage(
+    public ProductFindPageResponseDto findProductPageForOrder(
             Pageable pageable,
             String productName
     ) {

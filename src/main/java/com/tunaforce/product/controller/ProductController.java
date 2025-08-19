@@ -34,14 +34,14 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<ProductFindPageResponseDto> findProducts(
+    public ResponseEntity<ProductFindPageResponseDto> findProductsForOrder(
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @RequestParam(required = false) String productName
     ) {
         SortType.validate(pageable.getSort());
 
         ProductFindPageResponseDto productPage
-                = productService.findProductPage(pageable, productName);
+                = productService.findProductPageForOrder(pageable, productName);
 
         return ResponseEntity.ok()
                 .body(productPage);
