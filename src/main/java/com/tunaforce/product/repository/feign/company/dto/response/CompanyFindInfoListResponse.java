@@ -10,7 +10,7 @@ public record CompanyFindInfoListResponse(
 ) {
 
     public Map<UUID, String> toMap() {
-        return data().stream()
+        return data.stream()
                 .collect(Collectors.toMap(
                         CompanyFindInfoResponseDto::companyId,
                         CompanyFindInfoResponseDto::companyName
