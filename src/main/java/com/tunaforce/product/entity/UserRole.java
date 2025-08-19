@@ -13,7 +13,9 @@ public enum UserRole {
 
     MASTER("MASTER"),
     COMPANY("COMPANY"),
-    HUB("HUB");
+    HUB("HUB"),
+    DELIVERY("DELIVERY"),
+    ;
 
     private final String roleName;
 
