@@ -60,6 +60,19 @@ public class ProductService {
     }
 
     /**
+     * 주문 용 전체 상품 페이지네이션
+     */
+    public ProductFindPageResponseDto findProductPage(
+            Pageable pageable,
+            String productName
+    ) {
+        Page<ProductDetailsQuerydslResponseDto> page
+                = productQuerydslRepository.findPage(pageable, null, null, productName);
+
+        return mapPageToResponse(page);
+    }
+
+    /**
      * 허브 소속 업체들이 등록한 상품 페이지네이션
      */
     public ProductFindPageResponseDto findProductPageByHub(
@@ -91,6 +104,9 @@ public class ProductService {
         return mapPageToResponse(page);
     }
 
+    /**
+     * 특정 허브 소속 업체들의 등록 상품에 대한 권한별 조회
+     */
     private Page<ProductDetailsQuerydslResponseDto> findHubProductPageByAuthority(
             Pageable pageable,
             UUID hubId,
@@ -112,6 +128,9 @@ public class ProductService {
         return productQuerydslRepository.findPage(pageable, hubId, null, productName);
     }
 
+    /**
+     * 특정 업체의 등록 상품에 대한 권한별 조회
+     */
     private Page<ProductDetailsQuerydslResponseDto> findCompanyProductPageByAuthority(
             Pageable pageable,
             UUID companyId,
@@ -149,8 +168,8 @@ public class ProductService {
 
     public ProductFindPageResponseDto mapPageToResponse(Page<ProductDetailsQuerydslResponseDto> page) {
         // 조회한 레코드에서 허브와 업체 ID 중복 제거
-        Set<UUID> hubSet = getUniqueHubIdSet(page);
-        Set<UUID> companySet = getUniqueCompanyIdSet(page);
+        Set<UUID> hubSet = getUniqueHubIds(page);
+        Set<UUID> companySet = getUniqueCompanyIds(page);
 
         // 허브와 업체 정보(이름) 조회
         Map<UUID, String> hubs = getHubs(hubSet);
@@ -159,70 +178,16 @@ public class ProductService {
         return ProductFindPageResponseDto.from(page, hubs, companies);
     }
 
-    private static Set<UUID> getUniqueCompanyIdSet(Page<ProductDetailsQuerydslResponseDto> page) {
+    private static Set<UUID> getUniqueCompanyIds(Page<ProductDetailsQuerydslResponseDto> page) {
         return page.getContent().stream()
                 .map(ProductDetailsQuerydslResponseDto::companyId)
                 .collect(Collectors.toSet());
     }
 
-    private static Set<UUID> getUniqueHubIdSet(Page<ProductDetailsQuerydslResponseDto> page) {
+    private static Set<UUID> getUniqueHubIds(Page<ProductDetailsQuerydslResponseDto> page) {
         return page.getContent().stream()
                 .map(ProductDetailsQuerydslResponseDto::hubId)
                 .collect(Collectors.toSet());
-    }
-
-    public ProductFindPageResponseDto findProductPage(
-            Pageable pageable,
-            String productName,
-            UUID userId,
-            UserRole userRole
-    ) {
-        Page<ProductDetailsQuerydslResponseDto> page
-                = findProductPageByAuthority(pageable, productName, userId, userRole);
-
-        // 조회한 레코드에서 허브와 업체 ID 중복 제거
-        Set<UUID> hubSet = page.getContent().stream()
-                .map(ProductDetailsQuerydslResponseDto::hubId)
-                .collect(Collectors.toSet());
-
-        Set<UUID> companySet = page.getContent().stream()
-                .map(ProductDetailsQuerydslResponseDto::companyId)
-                .collect(Collectors.toSet());
-
-        // 허브와 업체 정보(이름) 조회
-        Map<UUID, String> hubs = getHubs(hubSet);
-        Map<UUID, String> companies = getCompanies(companySet);
-
-        return ProductFindPageResponseDto.from(page, hubs, companies);
-    }
-
-    /**
-     * 권한 별 페이지네이션
-     */
-    private Page<ProductDetailsQuerydslResponseDto> findProductPageByAuthority(
-            Pageable pageable,
-            String productName,
-            UUID userId,
-            UserRole userRole
-    ) {
-        // MASTER - 전체 상품 조회
-        if (userRole.equals(UserRole.MASTER)) {
-            return productQuerydslRepository.findPage(pageable, null, null, productName);
-        }
-
-        // HUB - 특정 허브(로그인 유저) 소속 업체들이 등록한 상품 조회
-        if (userRole.equals(UserRole.HUB)) {
-            HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
-            return productQuerydslRepository.findPage(pageable, hubInfo.hubId(), null, productName);
-        }
-
-        // COMPANY - 특정 업체(로그인 유저)가 등록한 상품 조회
-        if (userRole.equals(UserRole.COMPANY)) {
-            CompanyFindInfoResponseDto companyInfo = companyFeignClient.findCompanyInfoByUserId(userId);
-            return productQuerydslRepository.findPage(pageable, null, companyInfo.companyId(), productName);
-        }
-
-        throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
     }
 
     /**

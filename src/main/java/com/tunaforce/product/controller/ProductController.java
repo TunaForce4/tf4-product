@@ -36,14 +36,12 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<ProductFindPageResponseDto> findProducts(
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
-            @RequestParam(required = false) String productName,
-            @RequestHeader("X-USER-ID") UUID userId, // FIXME 임시
-            @RequestHeader("X-USER-ROLE") String userRole // FIXME 임시
+            @RequestParam(required = false) String productName
     ) {
         SortType.validate(pageable.getSort());
 
         ProductFindPageResponseDto productPage
-                = productService.findProductPage(pageable, productName, userId, UserRole.of(userRole));
+                = productService.findProductPage(pageable, productName);
 
         return ResponseEntity.ok()
                 .body(productPage);
