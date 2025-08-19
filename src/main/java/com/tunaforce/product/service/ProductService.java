@@ -114,6 +114,10 @@ public class ProductService {
             UUID userId,
             UserRole userRole
     ) {
+        if (userRole.equals(UserRole.COMPANY) || userRole.equals(UserRole.DELIVERY)) {
+            throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
+        }
+
         // 로그인한 유저가 허브 담당자 일 때 요청한 허브에 접근 가능한지 확인
         if (userRole.equals(UserRole.HUB)) {
             HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
@@ -133,6 +137,10 @@ public class ProductService {
             UUID userId,
             UserRole userRole
     ) {
+        if (userRole.equals(UserRole.DELIVERY)) {
+            throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
+        }
+
         // 로그인한 유저가 허브 담당자 일 때 요청한 업체가 소속 업체인지 확인
         if (userRole.equals(UserRole.HUB)) {
             HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
@@ -163,8 +171,8 @@ public class ProductService {
 
     private ProductFindPageResponseDto mapPageToResponse(Page<ProductDetailsQuerydslResponseDto> page) {
         // 조회한 레코드에서 허브와 업체 ID 중복 제거
-        Set<UUID> hubSet = getUniqueHubIds(page);
-        Set<UUID> companySet = getUniqueCompanyIds(page);
+        Set<UUID> hubSet = getUniqueHubIds(page.getContent());
+        Set<UUID> companySet = getUniqueCompanyIds(page.getContent());
 
         // 허브와 업체 정보(이름) 조회
         Map<UUID, String> hubs = getHubs(hubSet);
