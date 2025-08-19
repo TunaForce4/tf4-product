@@ -25,7 +25,8 @@ public class ProductController {
     @PostMapping
     public ResponseEntity<Void> createProduct(
             @RequestBody @Valid ProductCreateRequestDto productCreateRequestDto,
-            @RequestHeader("X-USER-ID") UUID userId // FIXME 임시
+            @RequestHeader("X-Auth-User-Id") UUID userId, // FIXME 임시
+            @RequestHeader("X-Auth-Roles") String userRole // FIXME 임시
     ) {
         productService.createProduct(productCreateRequestDto, userId);
 
@@ -52,8 +53,8 @@ public class ProductController {
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @PathVariable UUID hubId,
             @RequestParam(required = false) String productName,
-            @RequestHeader("X-USER-ID") UUID userId, // FIXME 임시
-            @RequestHeader("X-USER-ROLE") String userRole // FIXME 임시
+            @RequestHeader("X-Auth-User-Id") UUID userId, // FIXME 임시
+            @RequestHeader("X-Auth-Roles") String userRole // FIXME 임시
     ) {
         SortType.validate(pageable.getSort());
         UserRole role = UserRole.of(userRole);
@@ -70,8 +71,8 @@ public class ProductController {
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @PathVariable UUID companyId,
             @RequestParam(required = false) String productName,
-            @RequestHeader("X-USER-ID") UUID userId, // FIXME 임시
-            @RequestHeader("X-USER-ROLE") String userRole // FIXME 임시
+            @RequestHeader("X-Auth-User-Id") UUID userId, // FIXME 임시
+            @RequestHeader("X-Auth-Roles") String userRole // FIXME 임시
     ) {
         SortType.validate(pageable.getSort());
         UserRole role = UserRole.of(userRole);

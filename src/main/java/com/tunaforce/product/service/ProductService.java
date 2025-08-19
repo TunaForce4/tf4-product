@@ -155,13 +155,13 @@ public class ProductService {
         return productQuerydslRepository.findPage(pageable, null, companyId, productName);
     }
 
-    public void validateUuidMatch(UUID expectedId, UUID actualId) {
+    private void validateUuidMatch(UUID expectedId, UUID actualId) {
         if (!expectedId.equals(actualId)) {
             throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
         }
     }
 
-    public ProductFindPageResponseDto mapPageToResponse(Page<ProductDetailsQuerydslResponseDto> page) {
+    private ProductFindPageResponseDto mapPageToResponse(Page<ProductDetailsQuerydslResponseDto> page) {
         // 조회한 레코드에서 허브와 업체 ID 중복 제거
         Set<UUID> hubSet = getUniqueHubIds(page);
         Set<UUID> companySet = getUniqueCompanyIds(page);
@@ -176,8 +176,8 @@ public class ProductService {
     /**
      * 조회한 레코드 리스트에 포함된 Hub ID 값들을 중복 제거하여 Set으로 반환
      */
-    private static Set<UUID> getUniqueHubIds(Page<ProductDetailsQuerydslResponseDto> page) {
-        return page.getContent().stream()
+    private static Set<UUID> getUniqueHubIds(List<ProductDetailsQuerydslResponseDto> data) {
+        return data.stream()
                 .map(ProductDetailsQuerydslResponseDto::hubId)
                 .collect(Collectors.toSet());
     }
@@ -185,8 +185,8 @@ public class ProductService {
     /**
      * 조회한 레코드 리스트에 포함된 Company ID 값들을 중복 제거하여 Set으로 반환
      */
-    private static Set<UUID> getUniqueCompanyIds(Page<ProductDetailsQuerydslResponseDto> page) {
-        return page.getContent().stream()
+    private static Set<UUID> getUniqueCompanyIds(List<ProductDetailsQuerydslResponseDto> data) {
+        return data.stream()
                 .map(ProductDetailsQuerydslResponseDto::companyId)
                 .collect(Collectors.toSet());
     }
