@@ -178,15 +178,21 @@ public class ProductService {
         return ProductFindPageResponseDto.from(page, hubs, companies);
     }
 
-    private static Set<UUID> getUniqueCompanyIds(Page<ProductDetailsQuerydslResponseDto> page) {
-        return page.getContent().stream()
-                .map(ProductDetailsQuerydslResponseDto::companyId)
-                .collect(Collectors.toSet());
-    }
-
+    /**
+     * 조회한 레코드 리스트에 포함된 Hub ID 값들을 중복 제거하여 Set으로 반환
+     */
     private static Set<UUID> getUniqueHubIds(Page<ProductDetailsQuerydslResponseDto> page) {
         return page.getContent().stream()
                 .map(ProductDetailsQuerydslResponseDto::hubId)
+                .collect(Collectors.toSet());
+    }
+
+    /**
+     * 조회한 레코드 리스트에 포함된 Company ID 값들을 중복 제거하여 Set으로 반환
+     */
+    private static Set<UUID> getUniqueCompanyIds(Page<ProductDetailsQuerydslResponseDto> page) {
+        return page.getContent().stream()
+                .map(ProductDetailsQuerydslResponseDto::companyId)
                 .collect(Collectors.toSet());
     }
 
