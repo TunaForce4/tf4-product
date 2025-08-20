@@ -1,6 +1,7 @@
 package com.tunaforce.product.entity;
 
 import com.tunaforce.product.common.entity.Timestamped;
+import com.tunaforce.product.dto.request.ProductUpdateRequestDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -41,5 +42,11 @@ public class Product extends Timestamped {
         this.name = name;
         this.price = price;
         this.quantity = quantity;
+    }
+
+    public void update(ProductUpdateRequestDto request) {
+        this.name = request.name();
+        this.price = request.price();
+        this.quantity = request.quantity();
     }
 }

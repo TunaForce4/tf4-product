@@ -1,6 +1,9 @@
 package com.tunaforce.product.controller;
 
 import com.tunaforce.product.dto.request.ProductCreateRequestDto;
+import com.tunaforce.product.dto.request.ProductUpdateRequestDto;
+import com.tunaforce.product.dto.response.ProductDeleteResponseDto;
+import com.tunaforce.product.dto.response.ProductFindDetailResponseDto;
 import com.tunaforce.product.dto.response.ProductFindPageResponseDto;
 import com.tunaforce.product.entity.SortType;
 import com.tunaforce.product.entity.UserRole;
@@ -95,6 +98,34 @@ public class ProductController {
 
         ProductFindPageResponseDto data
                 = productService.findProductPageByCompany(pageable, companyId, productName, userId, role);
+
+        return ResponseEntity.ok()
+                .body(data);
+    }
+
+    @PatchMapping("/{productId}")
+    public ResponseEntity<Void> updateProduct(
+            @PathVariable UUID productId,
+            @RequestBody ProductUpdateRequestDto productUpdateRequestDto,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-Roles") String userRole
+    ) {
+        UserRole role = UserRole.of(userRole);
+
+        productService.updateProduct(productId, productUpdateRequestDto, userId, role);
+        return ResponseEntity.noContent()
+                .build();
+    }
+
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<ProductDeleteResponseDto> deleteProduct(
+            @PathVariable UUID productId,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-Roles") String userRole
+    ) {
+        UserRole role = UserRole.of(userRole);
+
+        ProductDeleteResponseDto data = productService.deleteProduct(productId, userId, role);
 
         return ResponseEntity.ok()
                 .body(data);

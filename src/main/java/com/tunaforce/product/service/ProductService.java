@@ -3,6 +3,9 @@ package com.tunaforce.product.service;
 import com.tunaforce.product.common.exception.CustomRuntimeException;
 import com.tunaforce.product.common.exception.ProductException;
 import com.tunaforce.product.dto.request.ProductCreateRequestDto;
+import com.tunaforce.product.dto.request.ProductUpdateRequestDto;
+import com.tunaforce.product.dto.response.ProductDeleteResponseDto;
+import com.tunaforce.product.dto.response.ProductFindDetailResponseDto;
 import com.tunaforce.product.dto.response.ProductFindPageResponseDto;
 import com.tunaforce.product.entity.Product;
 import com.tunaforce.product.entity.UserRole;
@@ -22,6 +25,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -137,6 +141,24 @@ public class ProductService {
         return mapPageToResponse(page);
     }
 
+    @Transactional
+    public void updateProduct(UUID productId, ProductUpdateRequestDto request, UUID userId, UserRole role) {
+        validateProductUpdateByAuthority(productId, userId, role);
+
+        Product product = findProductById(productId);
+        product.update(request);
+    }
+
+    @Transactional
+    public ProductDeleteResponseDto deleteProduct(UUID productId, UUID userId, UserRole role) {
+        validateProductDeleteByAuthority(productId, userId, role);
+
+        Product product = findProductById(productId);
+        product.delete(userId);
+
+        return new ProductDeleteResponseDto(true);
+    }
+
     /**
      * 특정 허브 소속 업체들의 등록 상품에 대한 권한별 조회
      */
@@ -195,6 +217,44 @@ public class ProductService {
         }
 
         return productQuerydslRepository.findPageForCompany(pageable, companyId, productName);
+    }
+
+    /**
+     * 상품 수정 유저 권한 검증
+     */
+    private void validateProductUpdateByAuthority(UUID productId, UUID userId, UserRole role) {
+        if (role.equals(UserRole.DELIVERY)) {
+            throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
+        }
+
+        Product product = findProductById(productId);
+
+        if (role.equals(UserRole.HUB)) {
+            HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
+            validateUuidMatch(hubInfo.hubId(), product.getHubId());
+        }
+
+        if (role.equals(UserRole.COMPANY)) {
+            CompanyFindInfoResponseDto companyInfo = companyFeignClient.findCompanyInfoByUserId(userId);
+            validateUuidMatch(companyInfo.companyId(), product.getCompanyId());
+        }
+    }
+
+    /**
+     * 상품 삭제 유저 권한 검증
+     */
+    private void validateProductDeleteByAuthority(UUID productId, UUID userId, UserRole role) {
+        // 등록 상품 삭제는 마스터 또는 허브 관리자만 가능
+        if (role.equals(UserRole.COMPANY) || role.equals(UserRole.DELIVERY)) {
+            throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
+        }
+
+        Product product = findProductById(productId);
+
+        if (role.equals(UserRole.HUB)) {
+            HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
+            validateUuidMatch(hubInfo.hubId(), product.getHubId());
+        }
     }
 
     private void validateUuidMatch(UUID expectedId, UUID actualId) {
@@ -259,5 +319,10 @@ public class ProductService {
         CompanyFindInfoListResponse companies = companyFeignClient.findCompanyInfoListByCompanyIds(requestDto);
 
         return companies.toMap();
+    }
+
+    private Product findProductById(UUID productId) {
+        return productJpaRepository.findById(productId)
+                .orElseThrow(() -> new CustomRuntimeException(ProductException.PRODUCT_NOT_FOUND));
     }
 }
