@@ -9,7 +9,6 @@ import com.tunaforce.product.dto.response.ProductFindDetailResponseDto;
 import com.tunaforce.product.dto.response.ProductFindPageResponseDto;
 import com.tunaforce.product.entity.Product;
 import com.tunaforce.product.entity.UserRole;
-import com.tunaforce.product.repository.feign.auth.AuthFeignClient;
 import com.tunaforce.product.repository.feign.company.CompanyFeignClient;
 import com.tunaforce.product.repository.feign.company.dto.request.CompanyFindInfoListRequestDto;
 import com.tunaforce.product.repository.feign.company.dto.response.CompanyFindInfoListResponse;
@@ -35,24 +34,14 @@ import java.util.stream.Collectors;
 public class ProductService {
 
     private final HubFeignClient hubFeignClient;
-    private final AuthFeignClient authFeignClient;
     private final CompanyFeignClient companyFeignClient;
 
     private final ProductJpaRepository productJpaRepository;
     private final ProductQuerydslRepository productQuerydslRepository;
 
-    public void createProduct(ProductCreateRequestDto request, UUID userId) {
-        // 유저 역할에 따라 상품 생성에 요청된 허브 또는 업체와 로그인한 유저의 허브 또는 업체와의 관계가 유효한지 검증
-//        AuthCreateProductCheckUserAffiliationRequestDto authRequestDto =
-//                new AuthCreateProductCheckUserAffiliationRequestDto(
-//                        userId,
-//                        request.hubId(),
-//                        request.companyId()
-//                );
-//
-//        authFeignClient.checkUserAffiliation(authRequestDto);
+    public void createProduct(ProductCreateRequestDto request, UUID userId, UserRole role) {
+        validateProductCreateByAuthority(request, userId, role);
 
-        // persist a product
         Product product = Product.builder()
                 .hubId(request.hubId())
                 .companyId(request.companyId())
@@ -180,6 +169,32 @@ public class ProductService {
         }
 
         return productQuerydslRepository.findPageForHub(pageable, hubId, productName);
+    }
+
+    /**
+     * 상품 등록 유저 권한 검증
+     */
+    private void validateProductCreateByAuthority(ProductCreateRequestDto request, UUID userId, UserRole role) {
+        if (role.equals(UserRole.DELIVERY)) {
+            throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
+        }
+
+        CompanyFindInfoResponseDto companyInfo = companyFeignClient.findCompanyInfoByCompanyId(request.companyId());
+
+        // 등록 요청한 업체가 요청한 허브의 소속 업체인지 확인
+        validateUuidMatch(request.hubId(), companyInfo.hubId());
+
+        // 허브 담당자의 경우 - 로그인한 유저의 허브 Id와 등록 요청한 허브 Id 확인
+        if (role.equals(UserRole.HUB)) {
+            HubFindInfoResponseDto userHub = hubFeignClient.findHubInfoByUserId(userId);
+            validateUuidMatch(userHub.hubId(), companyInfo.hubId());
+        }
+
+        // 업체 담당자의 경우 - 로그인한 유저의 업체 Id와 등록 요청한 업체 Id 확인
+        if (role.equals(UserRole.COMPANY)) {
+            CompanyFindInfoResponseDto userCompany = companyFeignClient.findCompanyInfoByUserId(userId);
+            validateUuidMatch(userCompany.companyId(), companyInfo.companyId());
+        }
     }
 
     /**
