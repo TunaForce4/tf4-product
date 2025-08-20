@@ -1,5 +1,6 @@
 package com.tunaforce.product.repository.feign.company;
 
+import com.tunaforce.product.repository.feign.company.dto.request.CompanyFindInfoListRequestDto;
 import com.tunaforce.product.repository.feign.company.dto.response.CompanyFindInfoListResponse;
 import com.tunaforce.product.repository.feign.company.dto.response.CompanyFindInfoResponseDto;
 import com.tunaforce.product.repository.feign.hub.dto.response.HubFindInfoResponseDto;
@@ -23,8 +24,12 @@ public class CompanyFeignFallbackFactory implements FallbackFactory<CompanyFeign
             }
 
             @Override
-            public CompanyFindInfoListResponse findCompanyInfoListByCompanyIds(List<UUID> companyIds) {
-                // TODO throw exceptions
+            public CompanyFindInfoResponseDto findCompanyInfoByCompanyId(UUID companyId) {
+                return null;
+            }
+
+            @Override
+            public CompanyFindInfoListResponse findCompanyInfoListByCompanyIds(CompanyFindInfoListRequestDto requestDto) {
                 return null;
             }
         };
