@@ -19,6 +19,9 @@ public class Product extends Timestamped {
     @Column(name = "product_id")
     private UUID id;
 
+    @Column(name = "hub_id", nullable = false)
+    private UUID hubId;
+
     @Column(name = "company_id", nullable = false)
     private UUID companyId;
 
@@ -32,7 +35,8 @@ public class Product extends Timestamped {
     private Integer quantity;
 
     @Builder
-    public Product(UUID companyId, String name, Integer price, Integer quantity) {
+    public Product(UUID hubId, UUID companyId, String name, Integer price, Integer quantity) {
+        this.hubId = hubId;
         this.companyId = companyId;
         this.name = name;
         this.price = price;

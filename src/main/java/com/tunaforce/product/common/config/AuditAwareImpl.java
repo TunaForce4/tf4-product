@@ -1,7 +1,6 @@
-package com.tunaforce.product.common.entity;
+package com.tunaforce.product.common.config;
 
 import jakarta.servlet.http.HttpServletRequest;
-import org.apache.commons.fileupload.RequestContext;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.web.context.request.RequestAttributes;
 import org.springframework.web.context.request.RequestContextHolder;
@@ -19,7 +18,7 @@ public class AuditAwareImpl implements AuditorAware<UUID> {
         // check type & casting
         if (requestAttributes instanceof ServletRequestAttributes servletRequestAttributes) {
             HttpServletRequest request = servletRequestAttributes.getRequest();
-            String userId = request.getHeader("X-USER-ID");
+            String userId = request.getHeader("X-Auth-User-Id");
 
             return Optional.of(UUID.fromString(userId));
         }

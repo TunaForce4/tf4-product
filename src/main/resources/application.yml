@@ -1,6 +1,6 @@
 spring:
   application:
-    name: product-service
+    name: products
 
   profiles:
     active: dev
@@ -9,8 +9,3 @@ spring:
     openfeign:
       circuitbreaker:
         enabled: true
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://0.0.0.0:3310/eureka
