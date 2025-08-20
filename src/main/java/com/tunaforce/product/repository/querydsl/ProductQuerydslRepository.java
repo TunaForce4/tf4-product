@@ -8,5 +8,11 @@ import java.util.UUID;
 
 public interface ProductQuerydslRepository {
 
-    Page<ProductDetailsQuerydslResponseDto> findPage(Pageable pageable, UUID hubId, UUID companyId, String productName);
+    ProductDetailsQuerydslResponseDto getProductDetails(UUID productId);
+
+    Page<ProductDetailsQuerydslResponseDto> findPage(Pageable pageable, String productName);
+
+    Page<ProductDetailsQuerydslResponseDto> findPageForHub(Pageable pageable, UUID hubId, String productName);
+
+    Page<ProductDetailsQuerydslResponseDto> findPageForCompany(Pageable pageable, UUID companyId, String productName);
 }

@@ -31,19 +31,58 @@ public class ProductQuerydslRepositoryImpl implements ProductQuerydslRepository 
     private final JPAQueryFactory queryFactory;
 
     @Override
+    public ProductDetailsQuerydslResponseDto getProductDetails(UUID productId) {
+        return queryFactory.select(new QProductDetailsQuerydslResponseDto(
+                        product.id,
+                        product.hubId,
+                        product.companyId,
+                        product.name,
+                        product.price,
+                        product.quantity,
+                        product.createdAt,
+                        product.updatedAt
+                ))
+                .from(product)
+                .where(product.id.eq(productId))
+                .fetchOne();
+    }
+
+    @Override
     public Page<ProductDetailsQuerydslResponseDto> findPage(
             Pageable pageable,
-            UUID hubId,
-            UUID companyId,
             String productName
     ) {
         Predicate[] whereClause = {
+                eqProductName(productName),
+                product.deletedAt.isNull()
+        };
+
+        return executeQuery(pageable, whereClause);
+    }
+
+    @Override
+    public Page<ProductDetailsQuerydslResponseDto> findPageForHub(Pageable pageable, UUID hubId, String productName) {
+        Predicate[] whereClause = {
                 eqHubId(hubId),
+                eqProductName(productName),
+                product.deletedAt.isNull()
+        };
+
+        return executeQuery(pageable, whereClause);
+    }
+
+    @Override
+    public Page<ProductDetailsQuerydslResponseDto> findPageForCompany(Pageable pageable, UUID companyId, String productName) {
+        Predicate[] whereClause = {
                 eqCompanyId(companyId),
                 eqProductName(productName),
                 product.deletedAt.isNull()
         };
 
+        return executeQuery(pageable, whereClause);
+    }
+
+    private Page<ProductDetailsQuerydslResponseDto> executeQuery(Pageable pageable, Predicate[] whereClause) {
         // SELECT
         List<ProductDetailsQuerydslResponseDto> records = queryFactory
                 .select(new QProductDetailsQuerydslResponseDto(
