@@ -14,7 +14,6 @@ import com.tunaforce.product.repository.feign.company.dto.request.CompanyFindInf
 import com.tunaforce.product.repository.feign.company.dto.response.CompanyFindInfoListResponse;
 import com.tunaforce.product.repository.feign.company.dto.response.CompanyFindInfoResponseDto;
 import com.tunaforce.product.repository.feign.hub.HubFeignClient;
-import com.tunaforce.product.repository.feign.hub.dto.request.HubFindInfoListRequestDto;
 import com.tunaforce.product.repository.feign.hub.dto.response.HubFindInfoListResponseDto;
 import com.tunaforce.product.repository.feign.hub.dto.response.HubFindInfoResponseDto;
 import com.tunaforce.product.repository.jpa.ProductJpaRepository;
@@ -312,8 +311,9 @@ public class ProductService {
             return Collections.emptyMap();
         }
 
-        HubFindInfoListRequestDto requestDto = HubFindInfoListRequestDto.from(hubSet.stream().toList());
-        HubFindInfoListResponseDto hubs = hubFeignClient.findHubInfoListByHubIds(requestDto);
+//        HubFindInfoListRequestDto requestDto = HubFindInfoListRequestDto.from(hubSet.stream().toList());
+//        HubFindInfoListResponseDto hubs = hubFeignClient.findHubInfoListByHubIds(requestDto);
+        HubFindInfoListResponseDto hubs = hubFeignClient.findHubInfoAll(0, 20);
 
         return hubs.toMap();
     }

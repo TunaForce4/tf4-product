@@ -26,6 +26,11 @@ public class HubFeignFallbackFactory implements FallbackFactory<HubFeignClient> 
             public HubFindInfoListResponseDto findHubInfoListByHubIds(HubFindInfoListRequestDto requestDto) {
                 return null;
             }
+
+            @Override
+            public HubFindInfoListResponseDto findHubInfoAll(int page, int size) {
+                return null;
+            }
         };
     }
 }
