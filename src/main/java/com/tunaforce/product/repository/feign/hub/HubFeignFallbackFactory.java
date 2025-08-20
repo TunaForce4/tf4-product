@@ -1,5 +1,6 @@
 package com.tunaforce.product.repository.feign.hub;
 
+import com.tunaforce.product.repository.feign.hub.dto.request.HubFindInfoListRequestDto;
 import com.tunaforce.product.repository.feign.hub.dto.response.HubFindInfoListResponseDto;
 import com.tunaforce.product.repository.feign.hub.dto.response.HubFindInfoResponseDto;
 import org.springframework.cloud.openfeign.FallbackFactory;
@@ -22,8 +23,7 @@ public class HubFeignFallbackFactory implements FallbackFactory<HubFeignClient> 
             }
 
             @Override
-            public HubFindInfoListResponseDto findHubInfoListByHubIds(List<UUID> hubIds) {
-                // TODO throw exceptions
+            public HubFindInfoListResponseDto findHubInfoListByHubIds(HubFindInfoListRequestDto requestDto) {
                 return null;
             }
         };
