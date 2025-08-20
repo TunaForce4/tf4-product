@@ -59,7 +59,8 @@ public class ProductService {
      * 상품 단건 조회 메인 서비스 로직
      */
     public ProductFindDetailResponseDto findProductDetails(UUID productId, UUID userId, UserRole userRole) {
-        ProductDetailsQuerydslResponseDto productDetails = productQuerydslRepository.getProductDetails(productId);
+        ProductDetailsQuerydslResponseDto productDetails = productQuerydslRepository.getProductDetails(productId)
+                .orElseThrow(() -> new CustomRuntimeException(ProductException.PRODUCT_NOT_FOUND));
 
         validateFindProductDetailsByAuthority(productDetails.hubId(), productDetails.companyId(), userId, userRole);
 
@@ -313,7 +314,7 @@ public class ProductService {
 
 //        HubFindInfoListRequestDto requestDto = HubFindInfoListRequestDto.from(hubSet.stream().toList());
 //        HubFindInfoListResponseDto hubs = hubFeignClient.findHubInfoListByHubIds(requestDto);
-        HubFindInfoListResponseDto hubs = hubFeignClient.findHubInfoAll(0, 20);
+        HubFindInfoListResponseDto hubs = hubFeignClient.findHubInfoAll(0, 0);
 
         return hubs.toMap();
     }

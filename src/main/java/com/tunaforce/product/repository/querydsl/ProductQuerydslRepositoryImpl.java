@@ -7,6 +7,8 @@ import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.PathBuilder;
 import com.querydsl.jpa.impl.JPAQuery;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import com.tunaforce.product.dto.response.ProductSimpleResponseDto;
+import com.tunaforce.product.dto.response.QProductSimpleResponseDto;
 import com.tunaforce.product.entity.Product;
 import com.tunaforce.product.repository.querydsl.dto.response.ProductDetailsQuerydslResponseDto;
 import com.tunaforce.product.repository.querydsl.dto.response.QProductDetailsQuerydslResponseDto;
@@ -20,6 +22,7 @@ import org.springframework.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static com.tunaforce.product.entity.QProduct.product;
@@ -31,8 +34,8 @@ public class ProductQuerydslRepositoryImpl implements ProductQuerydslRepository 
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public ProductDetailsQuerydslResponseDto getProductDetails(UUID productId) {
-        return queryFactory.select(new QProductDetailsQuerydslResponseDto(
+    public Optional<ProductDetailsQuerydslResponseDto> getProductDetails(UUID productId) {
+        ProductDetailsQuerydslResponseDto record = queryFactory.select(new QProductDetailsQuerydslResponseDto(
                         product.id,
                         product.hubId,
                         product.companyId,
@@ -45,6 +48,32 @@ public class ProductQuerydslRepositoryImpl implements ProductQuerydslRepository 
                 .from(product)
                 .where(product.id.eq(productId))
                 .fetchOne();
+
+        return Optional.ofNullable(record);
+    }
+
+    @Override
+    public Optional<ProductSimpleResponseDto> getProductSimpleDetails(UUID productId) {
+        ProductSimpleResponseDto record = queryFactory.select(new QProductSimpleResponseDto(
+                        product.id,
+                        product.name
+                ))
+                .from(product)
+                .where(product.id.eq(productId))
+                .fetchOne();
+
+        return Optional.ofNullable(record);
+    }
+
+    @Override
+    public List<ProductSimpleResponseDto> getProductSimpleList(List<UUID> productIds) {
+        return queryFactory.select(new QProductSimpleResponseDto(
+                        product.id,
+                        product.name
+                ))
+                .from(product)
+                .where(product.id.in(productIds))
+                .fetch();
     }
 
     @Override

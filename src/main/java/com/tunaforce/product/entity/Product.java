@@ -1,6 +1,8 @@
 package com.tunaforce.product.entity;
 
 import com.tunaforce.product.common.entity.Timestamped;
+import com.tunaforce.product.common.exception.CustomRuntimeException;
+import com.tunaforce.product.common.exception.ProductException;
 import com.tunaforce.product.dto.request.ProductUpdateRequestDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -48,5 +50,21 @@ public class Product extends Timestamped {
         this.name = request.name();
         this.price = request.price();
         this.quantity = request.quantity();
+    }
+
+    public void reduceStock(int quantity) {
+        if (this.quantity < quantity) {
+            throw new CustomRuntimeException(ProductException.OUT_OF_STOCK);
+        }
+
+        this.quantity -= quantity;
+    }
+
+    public int calculatePrice(int quantity) {
+        return this.price * quantity;
+    }
+
+    public void increaseStock(int restoreQuantity) {
+        this.quantity += restoreQuantity;
     }
 }

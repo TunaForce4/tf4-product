@@ -1,9 +1,12 @@
 package com.tunaforce.product.repository.querydsl;
 
+import com.tunaforce.product.dto.response.ProductSimpleResponseDto;
 import com.tunaforce.product.repository.querydsl.dto.response.ProductDetailsQuerydslResponseDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface ProductQuerydslRepository {
@@ -11,7 +14,11 @@ public interface ProductQuerydslRepository {
     /**
      * 상품 단건 조회 쿼리
      */
-    ProductDetailsQuerydslResponseDto getProductDetails(UUID productId);
+    Optional<ProductDetailsQuerydslResponseDto> getProductDetails(UUID productId);
+
+    Optional<ProductSimpleResponseDto> getProductSimpleDetails(UUID productId);
+
+    List<ProductSimpleResponseDto> getProductSimpleList(List<UUID> productIds);
 
     /**
      * 주문용 상품 전체 조회 쿼리
