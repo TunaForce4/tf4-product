@@ -39,6 +39,9 @@ public class ProductService {
     private final ProductJpaRepository productJpaRepository;
     private final ProductQuerydslRepository productQuerydslRepository;
 
+    /**
+     * 상품 생성 메인 서비스 로직
+     */
     public void createProduct(ProductCreateRequestDto request, UUID userId, UserRole role) {
         validateProductCreateByAuthority(request, userId, role);
 
@@ -53,8 +56,13 @@ public class ProductService {
         productJpaRepository.save(product);
     }
 
-    public ProductFindDetailResponseDto findProductDetail(UUID productId, UUID userId, UserRole userRole) {
-        ProductDetailsQuerydslResponseDto productDetails = findProductDetailsByAuthority(productId, userId, userRole);
+    /**
+     * 상품 단건 조회 메인 서비스 로직
+     */
+    public ProductFindDetailResponseDto findProductDetails(UUID productId, UUID userId, UserRole userRole) {
+        ProductDetailsQuerydslResponseDto productDetails = productQuerydslRepository.getProductDetails(productId);
+
+        validateProductDetailsByAuthority(productDetails.hubId(), productDetails.companyId(), userId, userRole);
 
         Set<UUID> uniqueHubIds = getUniqueHubIds(List.of(productDetails));
         Set<UUID> uniqueCompanyIds = getUniqueCompanyIds(List.of(productDetails));
@@ -65,41 +73,20 @@ public class ProductService {
         return ProductFindDetailResponseDto.from(productDetails, hubs, companies);
     }
 
-    private ProductDetailsQuerydslResponseDto findProductDetailsByAuthority(
-            UUID productId,
-            UUID userId,
-            UserRole userRole
-    ) {
-        ProductDetailsQuerydslResponseDto productDetails = productQuerydslRepository.getProductDetails(productId);
-
-        if (userRole.equals(UserRole.HUB)) {
-            HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
-            validateUuidMatch(hubInfo.hubId(), productDetails.hubId());
-        }
-
-        if (userRole.equals(UserRole.COMPANY)) {
-            CompanyFindInfoResponseDto companyInfo = companyFeignClient.findCompanyInfoByUserId(userId);
-            validateUuidMatch(companyInfo.companyId(), productDetails.companyId());
-        }
-
-        return productDetails;
-    }
-
     /**
-     * 주문 용 전체 상품 페이지네이션
+     * 주문 용 전체 상품 페이지네이션 메인 서비스 로직
      */
     public ProductFindPageResponseDto findProductPageForOrder(
             Pageable pageable,
             String productName
     ) {
-        Page<ProductDetailsQuerydslResponseDto> page
-                = productQuerydslRepository.findPage(pageable, productName);
+        Page<ProductDetailsQuerydslResponseDto> page = productQuerydslRepository.findPage(pageable, productName);
 
         return mapPageToResponse(page);
     }
 
     /**
-     * 허브 소속 업체들이 등록한 상품 페이지네이션
+     * 허브 소속 업체들이 등록한 상품 페이지네이션 메인 서비스 로직
      */
     public ProductFindPageResponseDto findProductPageByHub(
             Pageable pageable,
@@ -108,14 +95,16 @@ public class ProductService {
             UUID userId,
             UserRole userRole
     ) {
+        validateHubPageByAuthority(hubId, userId, userRole);
+
         Page<ProductDetailsQuerydslResponseDto> page
-                = findHubProductPageByAuthority(pageable, hubId, productName, userId, userRole);
+                = productQuerydslRepository.findPageForHub(pageable, hubId, productName);
 
         return mapPageToResponse(page);
     }
 
     /**
-     * 업체가 등록한 상품 페이지네이션
+     * 업체가 등록한 상품 페이지네이션 메인 서비스 로직
      */
     public ProductFindPageResponseDto findProductPageByCompany(
             Pageable pageable,
@@ -124,51 +113,36 @@ public class ProductService {
             UUID userId,
             UserRole userRole
     ) {
+        validateCompanyProductPageByAuthority(companyId, userId, userRole);
+
         Page<ProductDetailsQuerydslResponseDto> page
-                = findCompanyProductPageByAuthority(pageable, companyId, productName, userId, userRole);
+                = productQuerydslRepository.findPageForCompany(pageable, companyId, productName);
 
         return mapPageToResponse(page);
     }
 
+    /**
+     * 상품 수정 메인 서비스 로직
+     */
     @Transactional
     public void updateProduct(UUID productId, ProductUpdateRequestDto request, UUID userId, UserRole role) {
-        validateProductUpdateByAuthority(productId, userId, role);
-
         Product product = findProductById(productId);
+        validateProductUpdateByAuthority(product.getHubId(), product.getCompanyId(), userId, role);
+
         product.update(request);
     }
 
+    /**
+     * 상품 삭제 메인 서비스 로직
+     */
     @Transactional
     public ProductDeleteResponseDto deleteProduct(UUID productId, UUID userId, UserRole role) {
-        validateProductDeleteByAuthority(productId, userId, role);
-
         Product product = findProductById(productId);
+        validateProductDeleteByAuthority(product.getHubId(), userId, role);
+
         product.delete(userId);
 
         return new ProductDeleteResponseDto(true);
-    }
-
-    /**
-     * 특정 허브 소속 업체들의 등록 상품에 대한 권한별 조회
-     */
-    private Page<ProductDetailsQuerydslResponseDto> findHubProductPageByAuthority(
-            Pageable pageable,
-            UUID hubId,
-            String productName,
-            UUID userId,
-            UserRole userRole
-    ) {
-        if (userRole.equals(UserRole.COMPANY) || userRole.equals(UserRole.DELIVERY)) {
-            throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
-        }
-
-        // 로그인한 유저가 허브 담당자 일 때 요청한 허브에 접근 가능한지 확인
-        if (userRole.equals(UserRole.HUB)) {
-            HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
-            validateUuidMatch(hubId, hubInfo.hubId());
-        }
-
-        return productQuerydslRepository.findPageForHub(pageable, hubId, productName);
     }
 
     /**
@@ -179,105 +153,127 @@ public class ProductService {
             throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
         }
 
-        CompanyFindInfoResponseDto companyInfo = companyFeignClient.findCompanyInfoByCompanyId(request.companyId());
+        CompanyFindInfoResponseDto requestedCompany = companyFeignClient.findCompanyInfoByCompanyId(request.companyId());
 
         // 등록 요청한 업체가 요청한 허브의 소속 업체인지 확인
-        validateUuidMatch(request.hubId(), companyInfo.hubId());
+        validateUuidMatch(request.hubId(), requestedCompany.hubId());
 
         // 허브 담당자의 경우 - 로그인한 유저의 허브 Id와 등록 요청한 허브 Id 확인
         if (role.equals(UserRole.HUB)) {
             HubFindInfoResponseDto userHub = hubFeignClient.findHubInfoByUserId(userId);
-            validateUuidMatch(userHub.hubId(), companyInfo.hubId());
+            validateUuidMatch(userHub.hubId(), requestedCompany.hubId());
         }
 
         // 업체 담당자의 경우 - 로그인한 유저의 업체 Id와 등록 요청한 업체 Id 확인
         if (role.equals(UserRole.COMPANY)) {
             CompanyFindInfoResponseDto userCompany = companyFeignClient.findCompanyInfoByUserId(userId);
-            validateUuidMatch(userCompany.companyId(), companyInfo.companyId());
+            validateUuidMatch(userCompany.companyId(), requestedCompany.companyId());
+        }
+    }
+
+    /**
+     * 상품 단건 조회 유저 권한 검증
+     */
+    private void validateProductDetailsByAuthority(UUID productHubId, UUID productCompanyId, UUID userId, UserRole userRole) {
+        if (userRole.equals(UserRole.HUB)) {
+            HubFindInfoResponseDto userHub = hubFeignClient.findHubInfoByUserId(userId);
+            validateUuidMatch(userHub.hubId(), productHubId);
+        }
+
+        if (userRole.equals(UserRole.COMPANY)) {
+            CompanyFindInfoResponseDto userCompany = companyFeignClient.findCompanyInfoByUserId(userId);
+            validateUuidMatch(userCompany.companyId(), productCompanyId);
+        }
+    }
+
+    /**
+     * 특정 허브 소속 업체들의 등록 상품에 대한 권한별 조회
+     */
+    private void validateHubPageByAuthority(UUID requestedHubId, UUID userId, UserRole userRole) {
+        if (userRole.equals(UserRole.COMPANY) || userRole.equals(UserRole.DELIVERY)) {
+            throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
+        }
+
+        // 로그인한 유저가 허브 담당자 일 때 요청한 허브에 접근 가능한지 확인
+        if (userRole.equals(UserRole.HUB)) {
+            HubFindInfoResponseDto userHub = hubFeignClient.findHubInfoByUserId(userId);
+            validateUuidMatch(userHub.hubId(), requestedHubId);
         }
     }
 
     /**
      * 특정 업체의 등록 상품에 대한 권한별 조회
      */
-    private Page<ProductDetailsQuerydslResponseDto> findCompanyProductPageByAuthority(
-            Pageable pageable,
-            UUID companyId,
-            String productName,
-            UUID userId,
-            UserRole userRole
-    ) {
+    private void validateCompanyProductPageByAuthority(UUID requestedCompanyId, UUID userId, UserRole userRole) {
         if (userRole.equals(UserRole.DELIVERY)) {
             throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
         }
 
         // 로그인한 유저가 허브 담당자 일 때 요청한 업체가 소속 업체인지 확인
         if (userRole.equals(UserRole.HUB)) {
-            HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
-
-            CompanyFindInfoListRequestDto requestDto = CompanyFindInfoListRequestDto.from(List.of(companyId));
-            CompanyFindInfoListResponse companyInfos = companyFeignClient.findCompanyInfoListByCompanyIds(requestDto);
-
-            CompanyFindInfoResponseDto companyInfo = companyInfos.data().stream().findFirst()
-                    .orElseThrow(() -> new CustomRuntimeException(ProductException.COMPANY_NOT_FOUND));
-
-            // 로그인한 유저의 허브가 요청한 업체의 담당 허브인지 확인
-            validateUuidMatch(hubInfo.hubId(), companyInfo.hubId());
+            HubFindInfoResponseDto userHub = hubFeignClient.findHubInfoByUserId(userId);
+            CompanyFindInfoResponseDto requestedCompany = companyFeignClient.findCompanyInfoByCompanyId(requestedCompanyId);
+            validateUuidMatch(userHub.hubId(), requestedCompany.hubId());
         }
 
         // 로그인한 유저가 업체 담당자 일 때 자신의 업체인지 확인
         if (userRole.equals(UserRole.COMPANY)) {
-            CompanyFindInfoResponseDto companyInfo = companyFeignClient.findCompanyInfoByUserId(userId);
-            validateUuidMatch(companyId, companyInfo.companyId());
+            CompanyFindInfoResponseDto userCompany = companyFeignClient.findCompanyInfoByUserId(userId);
+            validateUuidMatch(userCompany.companyId(), requestedCompanyId);
         }
-
-        return productQuerydslRepository.findPageForCompany(pageable, companyId, productName);
     }
 
     /**
      * 상품 수정 유저 권한 검증
      */
-    private void validateProductUpdateByAuthority(UUID productId, UUID userId, UserRole role) {
+    private void validateProductUpdateByAuthority(
+            UUID productHubId,
+            UUID productCompanyId,
+            UUID userId,
+            UserRole role
+    ) {
         if (role.equals(UserRole.DELIVERY)) {
             throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
         }
 
-        Product product = findProductById(productId);
-
         if (role.equals(UserRole.HUB)) {
-            HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
-            validateUuidMatch(hubInfo.hubId(), product.getHubId());
+            HubFindInfoResponseDto userHub = hubFeignClient.findHubInfoByUserId(userId);
+            validateUuidMatch(userHub.hubId(), productHubId);
         }
 
         if (role.equals(UserRole.COMPANY)) {
-            CompanyFindInfoResponseDto companyInfo = companyFeignClient.findCompanyInfoByUserId(userId);
-            validateUuidMatch(companyInfo.companyId(), product.getCompanyId());
+            CompanyFindInfoResponseDto userCompany = companyFeignClient.findCompanyInfoByUserId(userId);
+            validateUuidMatch(userCompany.companyId(), productCompanyId);
         }
     }
 
     /**
      * 상품 삭제 유저 권한 검증
      */
-    private void validateProductDeleteByAuthority(UUID productId, UUID userId, UserRole role) {
+    private void validateProductDeleteByAuthority(UUID productHubId, UUID userId, UserRole role) {
         // 등록 상품 삭제는 마스터 또는 허브 관리자만 가능
         if (role.equals(UserRole.COMPANY) || role.equals(UserRole.DELIVERY)) {
             throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
         }
 
-        Product product = findProductById(productId);
-
         if (role.equals(UserRole.HUB)) {
             HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
-            validateUuidMatch(hubInfo.hubId(), product.getHubId());
+            validateUuidMatch(hubInfo.hubId(), productHubId);
         }
     }
 
+    /**
+     * 두 UUID 값을 비교, 두 값이 다르면 throw ACCESS_DENIED exception
+     */
     private void validateUuidMatch(UUID expectedId, UUID actualId) {
         if (!expectedId.equals(actualId)) {
             throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
         }
     }
 
+    /**
+     * 조회한 Page 객체를 ProductFindPageResponseDto로 매핑
+     */
     private ProductFindPageResponseDto mapPageToResponse(Page<ProductDetailsQuerydslResponseDto> page) {
         // 조회한 레코드에서 허브와 업체 ID 중복 제거
         Set<UUID> hubSet = getUniqueHubIds(page.getContent());

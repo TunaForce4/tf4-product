@@ -27,17 +27,8 @@ public record ProductFindPageResponseDto(
             Map<UUID, String> companies
     ) {
         List<ProductFindDetailResponseDto> data = page.getContent().stream()
-                .map(product -> ProductFindDetailResponseDto.builder()
-                        .productId(product.productId())
-                        .hubName(hubs.get(product.hubId()))
-                        .companyName(companies.get(product.companyId()))
-                        .productName(product.name())
-                        .productQuantity(product.quantity())
-                        .productPrice(product.price())
-                        .createdAt(product.createdAt())
-                        .createdAt(product.updatedAt())
-                        .build()
-                ).toList();
+                .map(dto -> ProductFindDetailResponseDto.from(dto, hubs, companies))
+                .toList();
 
         return ProductFindPageResponseDto.builder()
                 .totalElements(page.getTotalElements())

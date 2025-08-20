@@ -47,7 +47,7 @@ public class ProductController {
     ) {
         UserRole role = UserRole.of(userRole);
 
-        ProductFindDetailResponseDto data = productService.findProductDetail(productId, userId, role);
+        ProductFindDetailResponseDto data = productService.findProductDetails(productId, userId, role);
 
         return ResponseEntity.ok()
                 .body(data);
