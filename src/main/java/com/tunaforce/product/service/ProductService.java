@@ -8,9 +8,11 @@ import com.tunaforce.product.entity.Product;
 import com.tunaforce.product.entity.UserRole;
 import com.tunaforce.product.repository.feign.auth.AuthFeignClient;
 import com.tunaforce.product.repository.feign.company.CompanyFeignClient;
+import com.tunaforce.product.repository.feign.company.dto.request.CompanyFindInfoListRequestDto;
 import com.tunaforce.product.repository.feign.company.dto.response.CompanyFindInfoListResponse;
 import com.tunaforce.product.repository.feign.company.dto.response.CompanyFindInfoResponseDto;
 import com.tunaforce.product.repository.feign.hub.HubFeignClient;
+import com.tunaforce.product.repository.feign.hub.dto.request.HubFindInfoListRequestDto;
 import com.tunaforce.product.repository.feign.hub.dto.response.HubFindInfoListResponseDto;
 import com.tunaforce.product.repository.feign.hub.dto.response.HubFindInfoResponseDto;
 import com.tunaforce.product.repository.jpa.ProductJpaRepository;
@@ -33,7 +35,6 @@ public class ProductService {
     private final CompanyFeignClient companyFeignClient;
 
     private final ProductJpaRepository productJpaRepository;
-
     private final ProductQuerydslRepository productQuerydslRepository;
 
     public void createProduct(ProductCreateRequestDto request, UUID userId) {
@@ -59,6 +60,38 @@ public class ProductService {
         productJpaRepository.save(product);
     }
 
+    public ProductFindDetailResponseDto findProductDetail(UUID productId, UUID userId, UserRole userRole) {
+        ProductDetailsQuerydslResponseDto productDetails = findProductDetailsByAuthority(productId, userId, userRole);
+
+        Set<UUID> uniqueHubIds = getUniqueHubIds(List.of(productDetails));
+        Set<UUID> uniqueCompanyIds = getUniqueCompanyIds(List.of(productDetails));
+
+        Map<UUID, String> hubs = getHubs(uniqueHubIds);
+        Map<UUID, String> companies = getCompanies(uniqueCompanyIds);
+
+        return ProductFindDetailResponseDto.from(productDetails, hubs, companies);
+    }
+
+    private ProductDetailsQuerydslResponseDto findProductDetailsByAuthority(
+            UUID productId,
+            UUID userId,
+            UserRole userRole
+    ) {
+        ProductDetailsQuerydslResponseDto productDetails = productQuerydslRepository.getProductDetails(productId);
+
+        if (userRole.equals(UserRole.HUB)) {
+            HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
+            validateUuidMatch(hubInfo.hubId(), productDetails.hubId());
+        }
+
+        if (userRole.equals(UserRole.COMPANY)) {
+            CompanyFindInfoResponseDto companyInfo = companyFeignClient.findCompanyInfoByUserId(userId);
+            validateUuidMatch(companyInfo.companyId(), productDetails.companyId());
+        }
+
+        return productDetails;
+    }
+
     /**
      * 주문 용 전체 상품 페이지네이션
      */
@@ -67,7 +100,7 @@ public class ProductService {
             String productName
     ) {
         Page<ProductDetailsQuerydslResponseDto> page
-                = productQuerydslRepository.findPage(pageable, null, null, productName);
+                = productQuerydslRepository.findPage(pageable, productName);
 
         return mapPageToResponse(page);
     }
@@ -89,7 +122,7 @@ public class ProductService {
     }
 
     /**
-     * 허브 소속 업체들이 등록한 상품 페이지네이션
+     * 업체가 등록한 상품 페이지네이션
      */
     public ProductFindPageResponseDto findProductPageByCompany(
             Pageable pageable,
@@ -124,7 +157,7 @@ public class ProductService {
             validateUuidMatch(hubId, hubInfo.hubId());
         }
 
-        return productQuerydslRepository.findPage(pageable, hubId, null, productName);
+        return productQuerydslRepository.findPageForHub(pageable, hubId, productName);
     }
 
     /**
@@ -144,8 +177,9 @@ public class ProductService {
         // 로그인한 유저가 허브 담당자 일 때 요청한 업체가 소속 업체인지 확인
         if (userRole.equals(UserRole.HUB)) {
             HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
-            CompanyFindInfoListResponse companyInfos
-                    = companyFeignClient.findCompanyInfoListByCompanyIds(List.of(companyId));
+
+            CompanyFindInfoListRequestDto requestDto = CompanyFindInfoListRequestDto.from(List.of(companyId));
+            CompanyFindInfoListResponse companyInfos = companyFeignClient.findCompanyInfoListByCompanyIds(requestDto);
 
             CompanyFindInfoResponseDto companyInfo = companyInfos.data().stream().findFirst()
                     .orElseThrow(() -> new CustomRuntimeException(ProductException.COMPANY_NOT_FOUND));
@@ -160,7 +194,7 @@ public class ProductService {
             validateUuidMatch(companyId, companyInfo.companyId());
         }
 
-        return productQuerydslRepository.findPage(pageable, null, companyId, productName);
+        return productQuerydslRepository.findPageForCompany(pageable, companyId, productName);
     }
 
     private void validateUuidMatch(UUID expectedId, UUID actualId) {
@@ -184,7 +218,7 @@ public class ProductService {
     /**
      * 조회한 레코드 리스트에 포함된 Hub ID 값들을 중복 제거하여 Set으로 반환
      */
-    private static Set<UUID> getUniqueHubIds(List<ProductDetailsQuerydslResponseDto> data) {
+    private Set<UUID> getUniqueHubIds(List<ProductDetailsQuerydslResponseDto> data) {
         return data.stream()
                 .map(ProductDetailsQuerydslResponseDto::hubId)
                 .collect(Collectors.toSet());
@@ -193,7 +227,7 @@ public class ProductService {
     /**
      * 조회한 레코드 리스트에 포함된 Company ID 값들을 중복 제거하여 Set으로 반환
      */
-    private static Set<UUID> getUniqueCompanyIds(List<ProductDetailsQuerydslResponseDto> data) {
+    private Set<UUID> getUniqueCompanyIds(List<ProductDetailsQuerydslResponseDto> data) {
         return data.stream()
                 .map(ProductDetailsQuerydslResponseDto::companyId)
                 .collect(Collectors.toSet());
@@ -207,7 +241,9 @@ public class ProductService {
             return Collections.emptyMap();
         }
 
-        HubFindInfoListResponseDto hubs = hubFeignClient.findHubInfoListByHubIds(new ArrayList<>(hubSet));
+        HubFindInfoListRequestDto requestDto = HubFindInfoListRequestDto.from(hubSet.stream().toList());
+        HubFindInfoListResponseDto hubs = hubFeignClient.findHubInfoListByHubIds(requestDto);
+
         return hubs.toMap();
     }
 
@@ -219,7 +255,9 @@ public class ProductService {
             return Collections.emptyMap();
         }
 
-        CompanyFindInfoListResponse companies = companyFeignClient.findCompanyInfoListByCompanyIds(new ArrayList<>(companySet));
+        CompanyFindInfoListRequestDto requestDto = CompanyFindInfoListRequestDto.from(companySet.stream().toList());
+        CompanyFindInfoListResponse companies = companyFeignClient.findCompanyInfoListByCompanyIds(requestDto);
+
         return companies.toMap();
     }
 }

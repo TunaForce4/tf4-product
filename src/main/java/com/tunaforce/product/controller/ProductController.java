@@ -36,6 +36,20 @@ public class ProductController {
                 .body(null);
     }
 
+    @GetMapping("/{productId}")
+    public ResponseEntity<ProductFindDetailResponseDto> findProductDetail(
+            @PathVariable UUID productId,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-Roles") String userRole
+    ) {
+        UserRole role = UserRole.of(userRole);
+
+        ProductFindDetailResponseDto data = productService.findProductDetail(productId, userId, role);
+
+        return ResponseEntity.ok()
+                .body(data);
+    }
+
     @GetMapping
     public ResponseEntity<ProductFindPageResponseDto> findProductsForOrder(
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
