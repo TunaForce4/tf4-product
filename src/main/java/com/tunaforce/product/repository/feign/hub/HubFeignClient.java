@@ -10,9 +10,10 @@ import java.util.List;
 import java.util.UUID;
 
 @FeignClient(
-        name = "hubs",
+        name = "hub",
         path = "/hubs",
-        fallbackFactory = HubFeignFallbackFactory.class)
+        fallbackFactory = HubFeignFallbackFactory.class
+)
 public interface HubFeignClient {
 
     @GetMapping("/admins/{userId}")

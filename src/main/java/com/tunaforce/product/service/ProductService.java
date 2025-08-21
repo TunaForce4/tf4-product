@@ -10,8 +10,9 @@ import com.tunaforce.product.dto.response.ProductFindPageResponseDto;
 import com.tunaforce.product.entity.Product;
 import com.tunaforce.product.entity.UserRole;
 import com.tunaforce.product.repository.feign.company.CompanyFeignClient;
+import com.tunaforce.product.repository.feign.company.dto.request.CompanyFIndInfosRequestDto;
 import com.tunaforce.product.repository.feign.company.dto.request.CompanyFindInfoListRequestDto;
-import com.tunaforce.product.repository.feign.company.dto.response.CompanyFindInfoListResponse;
+import com.tunaforce.product.repository.feign.company.dto.response.CompanyFindInfoListResponseDto;
 import com.tunaforce.product.repository.feign.company.dto.response.CompanyFindInfoResponseDto;
 import com.tunaforce.product.repository.feign.hub.HubFeignClient;
 import com.tunaforce.product.repository.feign.hub.dto.response.HubFindInfoListResponseDto;
@@ -327,8 +328,9 @@ public class ProductService {
             return Collections.emptyMap();
         }
 
-        CompanyFindInfoListRequestDto requestDto = CompanyFindInfoListRequestDto.from(companySet.stream().toList());
-        CompanyFindInfoListResponse companies = companyFeignClient.findCompanyInfoListByCompanyIds(requestDto);
+        CompanyFindInfoListResponseDto companies = companyFeignClient.findCompanyInfoListByCompanyIds(new CompanyFIndInfosRequestDto(
+                companySet.stream().toList()
+        ));
 
         return companies.toMap();
     }

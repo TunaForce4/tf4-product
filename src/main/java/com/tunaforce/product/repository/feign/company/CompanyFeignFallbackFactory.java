@@ -1,13 +1,12 @@
 package com.tunaforce.product.repository.feign.company;
 
+import com.tunaforce.product.repository.feign.company.dto.request.CompanyFIndInfosRequestDto;
 import com.tunaforce.product.repository.feign.company.dto.request.CompanyFindInfoListRequestDto;
-import com.tunaforce.product.repository.feign.company.dto.response.CompanyFindInfoListResponse;
+import com.tunaforce.product.repository.feign.company.dto.response.CompanyFindInfoListResponseDto;
 import com.tunaforce.product.repository.feign.company.dto.response.CompanyFindInfoResponseDto;
-import com.tunaforce.product.repository.feign.hub.dto.response.HubFindInfoResponseDto;
 import org.springframework.cloud.openfeign.FallbackFactory;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
 import java.util.UUID;
 
 @Component
@@ -29,7 +28,7 @@ public class CompanyFeignFallbackFactory implements FallbackFactory<CompanyFeign
             }
 
             @Override
-            public CompanyFindInfoListResponse findCompanyInfoListByCompanyIds(CompanyFindInfoListRequestDto requestDto) {
+            public CompanyFindInfoListResponseDto findCompanyInfoListByCompanyIds(CompanyFIndInfosRequestDto requestDto) {
                 return null;
             }
         };

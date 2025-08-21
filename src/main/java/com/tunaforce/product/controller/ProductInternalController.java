@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/internal/products")
+@RequestMapping("/products/internal")
 @RequiredArgsConstructor
 public class ProductInternalController {
 
