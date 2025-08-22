@@ -1,11 +1,15 @@
 package com.tunaforce.product.entity;
 
 import com.tunaforce.product.common.entity.Timestamped;
+import com.tunaforce.product.common.exception.CustomRuntimeException;
+import com.tunaforce.product.common.exception.ProductException;
+import com.tunaforce.product.dto.request.ProductUpdateRequestDto;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.util.StringUtils;
 
 import java.util.UUID;
 
@@ -41,5 +45,46 @@ public class Product extends Timestamped {
         this.name = name;
         this.price = price;
         this.quantity = quantity;
+    }
+
+    public void update(ProductUpdateRequestDto request) {
+        updateName(request.name());
+        updatePrice(request.price());
+        updateQuantity(request.quantity());
+    }
+
+    private void updateName(String name) {
+        if (StringUtils.hasText(name)) {
+            this.name = name;
+        }
+    }
+
+    private void updatePrice(Integer price) {
+        if (price != null) {
+            this.price = price;
+        }
+    }
+
+    private void updateQuantity(Integer quantity) {
+        if (quantity != null) {
+            this.quantity = quantity;
+        }
+    }
+
+
+    public void reduceStock(int quantity) {
+        if (this.quantity < quantity) {
+            throw new CustomRuntimeException(ProductException.OUT_OF_STOCK);
+        }
+
+        this.quantity -= quantity;
+    }
+
+    public int calculatePrice(int quantity) {
+        return this.price * quantity;
+    }
+
+    public void increaseStock(int restoreQuantity) {
+        this.quantity += restoreQuantity;
     }
 }

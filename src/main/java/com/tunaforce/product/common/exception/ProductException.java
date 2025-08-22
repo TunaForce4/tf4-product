@@ -26,6 +26,9 @@ public enum ProductException {
     HUB_NOT_FOUND(HttpStatus.NOT_FOUND, "허브 정보를 찾을 수 없습니다."),
     INVALID_HUB_COMPANY_RELATION(HttpStatus.BAD_REQUEST, "선택한 업체는 해당 허브에 소속되어 있지 않습니다."),
     HUB_SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "서비스가 동작하지 않습니다."),
+
+    // Order
+    OUT_OF_STOCK(HttpStatus.CONFLICT, "재고가 부족합니다."),
     ;
 
     private final HttpStatus status;

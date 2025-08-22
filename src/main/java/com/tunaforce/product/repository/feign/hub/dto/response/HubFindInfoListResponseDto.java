@@ -6,11 +6,11 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public record HubFindInfoListResponseDto(
-        List<HubFindInfoResponseDto> data
+        List<HubFindInfoResponseDto> content
 ) {
 
     public Map<UUID, String> toMap() {
-        return data.stream()
+        return content.stream()
                 .collect(Collectors.toMap(
                         HubFindInfoResponseDto::hubId,
                         HubFindInfoResponseDto::hubName

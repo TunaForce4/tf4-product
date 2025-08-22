@@ -1,6 +1,9 @@
 package com.tunaforce.product.controller;
 
 import com.tunaforce.product.dto.request.ProductCreateRequestDto;
+import com.tunaforce.product.dto.request.ProductUpdateRequestDto;
+import com.tunaforce.product.dto.response.ProductDeleteResponseDto;
+import com.tunaforce.product.dto.response.ProductFindDetailResponseDto;
 import com.tunaforce.product.dto.response.ProductFindPageResponseDto;
 import com.tunaforce.product.entity.SortType;
 import com.tunaforce.product.entity.UserRole;
@@ -25,13 +28,29 @@ public class ProductController {
     @PostMapping
     public ResponseEntity<Void> createProduct(
             @RequestBody @Valid ProductCreateRequestDto productCreateRequestDto,
-            @RequestHeader("X-Auth-User-Id") UUID userId, // FIXME 임시
-            @RequestHeader("X-Auth-Roles") String userRole // FIXME 임시
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-Roles") String userRole
     ) {
-        productService.createProduct(productCreateRequestDto, userId);
+        UserRole role = UserRole.of(userRole);
+
+        productService.createProduct(productCreateRequestDto, userId, role);
 
         return ResponseEntity.created(null)
                 .body(null);
+    }
+
+    @GetMapping("/{productId}")
+    public ResponseEntity<ProductFindDetailResponseDto> findProductDetail(
+            @PathVariable UUID productId,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-Roles") String userRole
+    ) {
+        UserRole role = UserRole.of(userRole);
+
+        ProductFindDetailResponseDto data = productService.findProductDetails(productId, userId, role);
+
+        return ResponseEntity.ok()
+                .body(data);
     }
 
     @GetMapping
@@ -53,8 +72,8 @@ public class ProductController {
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @PathVariable UUID hubId,
             @RequestParam(required = false) String productName,
-            @RequestHeader("X-Auth-User-Id") UUID userId, // FIXME 임시
-            @RequestHeader("X-Auth-Roles") String userRole // FIXME 임시
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-Roles") String userRole
     ) {
         SortType.validate(pageable.getSort());
         UserRole role = UserRole.of(userRole);
@@ -71,14 +90,42 @@ public class ProductController {
             @PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable,
             @PathVariable UUID companyId,
             @RequestParam(required = false) String productName,
-            @RequestHeader("X-Auth-User-Id") UUID userId, // FIXME 임시
-            @RequestHeader("X-Auth-Roles") String userRole // FIXME 임시
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-Roles") String userRole
     ) {
         SortType.validate(pageable.getSort());
         UserRole role = UserRole.of(userRole);
 
         ProductFindPageResponseDto data
                 = productService.findProductPageByCompany(pageable, companyId, productName, userId, role);
+
+        return ResponseEntity.ok()
+                .body(data);
+    }
+
+    @PatchMapping("/{productId}")
+    public ResponseEntity<Void> updateProduct(
+            @PathVariable UUID productId,
+            @RequestBody ProductUpdateRequestDto productUpdateRequestDto,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-Roles") String userRole
+    ) {
+        UserRole role = UserRole.of(userRole);
+
+        productService.updateProduct(productId, productUpdateRequestDto, userId, role);
+        return ResponseEntity.noContent()
+                .build();
+    }
+
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<ProductDeleteResponseDto> deleteProduct(
+            @PathVariable UUID productId,
+            @RequestHeader("X-User-Id") UUID userId,
+            @RequestHeader("X-Roles") String userRole
+    ) {
+        UserRole role = UserRole.of(userRole);
+
+        ProductDeleteResponseDto data = productService.deleteProduct(productId, userId, role);
 
         return ResponseEntity.ok()
                 .body(data);

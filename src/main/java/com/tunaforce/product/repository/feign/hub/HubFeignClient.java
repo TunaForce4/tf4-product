@@ -11,15 +11,15 @@ import java.util.List;
 import java.util.UUID;
 
 @FeignClient(
-        name = "hubs",
-        url = "localhost:3340",
-        path = "/internal/hubs/product-hub",
-        fallbackFactory = HubFeignFallbackFactory.class)
+        name = "hub",
+        path = "/hubs",
+        fallbackFactory = HubFeignFallbackFactory.class
+)
 public interface HubFeignClient {
 
-    @GetMapping("/find-by-user-id/{userId}")
+    @GetMapping("/admins/{userId}")
     HubFindInfoResponseDto findHubInfoByUserId(@PathVariable("userId") UUID userId);
 
-    @GetMapping("/find-by-hub-ids")
-    HubFindInfoListResponseDto findHubInfoListByHubIds(@RequestParam List<UUID> hubIds);
+    @GetMapping
+    List<HubFindInfoResponseDto> findHubInfoAll(@RequestParam int page, @RequestParam int size);
 }

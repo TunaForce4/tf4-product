@@ -88,3 +88,8 @@ sourceSets {
 clean {
     delete file(querydslSrcDir)
 }
+
+//
+springBoot {
+    mainClass = 'com.tunaforce.product.ProductApplication'
+}
