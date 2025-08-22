@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 @Getter
 @RequiredArgsConstructor
@@ -24,14 +26,22 @@ public enum SortType {
     private final Sort.Direction direction;
 
     public static void validate(Sort sort) {
-        for (Sort.Order order : sort) {
-            boolean valid = Arrays.stream(SortType.values())
-                    .anyMatch(sortType -> sortType.value.equalsIgnoreCase(order.getProperty()) &&
-                            sortType.getDirection().equals(order.getDirection()));
+        Set<String> check = new HashSet<>();
 
-            if (!valid) {
+        for (Sort.Order order : sort) {
+            if (!match(order)) {
                 throw new CustomRuntimeException(ProductException.UNSUPPORTED_SORT_TYPE);
             }
+
+            if (!check.add(order.getProperty().toLowerCase())) {
+                throw new CustomRuntimeException(ProductException.DUPLICATED_SORT_TYPE);
+            }
         }
+    }
+
+    private static boolean match(Sort.Order order) {
+        return Arrays.stream(SortType.values())
+                .anyMatch(sortType -> sortType.value.equalsIgnoreCase(order.getProperty()) &&
+                        sortType.getDirection().equals(order.getDirection()));
     }
 }
