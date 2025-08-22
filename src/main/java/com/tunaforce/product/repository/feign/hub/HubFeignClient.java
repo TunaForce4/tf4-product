@@ -1,10 +1,11 @@
 package com.tunaforce.product.repository.feign.hub;
 
-import com.tunaforce.product.repository.feign.hub.dto.request.HubFindInfoListRequestDto;
 import com.tunaforce.product.repository.feign.hub.dto.response.HubFindInfoListResponseDto;
 import com.tunaforce.product.repository.feign.hub.dto.response.HubFindInfoResponseDto;
 import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 import java.util.UUID;
@@ -20,10 +21,5 @@ public interface HubFeignClient {
     HubFindInfoResponseDto findHubInfoByUserId(@PathVariable("userId") UUID userId);
 
     @GetMapping
-    HubFindInfoListResponseDto findHubInfoAll(@RequestParam int page, @RequestParam int size);
-
-    @PostMapping("/find-by-hub-ids")
-    HubFindInfoListResponseDto findHubInfoListByHubIds(
-            @RequestBody HubFindInfoListRequestDto requestDto
-    );
+    List<HubFindInfoResponseDto> findHubInfoAll(@RequestParam int page, @RequestParam int size);
 }

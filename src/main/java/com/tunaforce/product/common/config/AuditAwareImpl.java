@@ -18,11 +18,13 @@ public class AuditAwareImpl implements AuditorAware<UUID> {
         // check type & casting
         if (requestAttributes instanceof ServletRequestAttributes servletRequestAttributes) {
             HttpServletRequest request = servletRequestAttributes.getRequest();
-            String userId = request.getHeader("X-Auth-User-Id");
+            String userId = request.getHeader("X-User-Id");
 
-            return Optional.of(UUID.fromString(userId));
+            if (userId != null && !userId.isEmpty()) {
+                return Optional.of(UUID.fromString(userId));
+            }
         }
 
-        return Optional.empty();
+        return Optional.of(UUID.fromString("00000000-0000-0000-0000-000000000000"));
     }
 }

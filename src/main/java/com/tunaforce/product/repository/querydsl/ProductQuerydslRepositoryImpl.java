@@ -46,7 +46,10 @@ public class ProductQuerydslRepositoryImpl implements ProductQuerydslRepository 
                         product.updatedAt
                 ))
                 .from(product)
-                .where(product.id.eq(productId))
+                .where(
+                        product.id.eq(productId),
+                        product.deletedAt.isNull()
+                )
                 .fetchOne();
 
         return Optional.ofNullable(record);
@@ -56,6 +59,8 @@ public class ProductQuerydslRepositoryImpl implements ProductQuerydslRepository 
     public Optional<ProductSimpleResponseDto> getProductSimpleDetails(UUID productId) {
         ProductSimpleResponseDto record = queryFactory.select(new QProductSimpleResponseDto(
                         product.id,
+                        product.companyId,
+                        product.hubId,
                         product.name
                 ))
                 .from(product)
@@ -69,6 +74,8 @@ public class ProductQuerydslRepositoryImpl implements ProductQuerydslRepository 
     public List<ProductSimpleResponseDto> getProductSimpleList(List<UUID> productIds) {
         return queryFactory.select(new QProductSimpleResponseDto(
                         product.id,
+                        product.companyId,
+                        product.hubId,
                         product.name
                 ))
                 .from(product)

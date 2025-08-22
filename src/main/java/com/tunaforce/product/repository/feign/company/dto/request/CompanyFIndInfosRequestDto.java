@@ -4,6 +4,6 @@ import java.util.List;
 import java.util.UUID;
 
 public record CompanyFIndInfosRequestDto(
-        List<UUID> companyIds
+        List<UUID> companyIdList
 ) {
 }

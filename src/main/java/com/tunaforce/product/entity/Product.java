@@ -9,6 +9,7 @@ import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.springframework.util.StringUtils;
 
 import java.util.UUID;
 
@@ -47,10 +48,29 @@ public class Product extends Timestamped {
     }
 
     public void update(ProductUpdateRequestDto request) {
-        this.name = request.name();
-        this.price = request.price();
-        this.quantity = request.quantity();
+        updateName(request.name());
+        updatePrice(request.price());
+        updateQuantity(request.quantity());
     }
+
+    private void updateName(String name) {
+        if (StringUtils.hasText(name)) {
+            this.name = name;
+        }
+    }
+
+    private void updatePrice(Integer price) {
+        if (price != null) {
+            this.price = price;
+        }
+    }
+
+    private void updateQuantity(Integer quantity) {
+        if (quantity != null) {
+            this.quantity = quantity;
+        }
+    }
+
 
     public void reduceStock(int quantity) {
         if (this.quantity < quantity) {

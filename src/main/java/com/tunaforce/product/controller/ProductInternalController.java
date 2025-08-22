@@ -1,12 +1,12 @@
 package com.tunaforce.product.controller;
 
-import com.tunaforce.product.dto.request.ProductUpdateOrderQuantityRequestDto;
 import com.tunaforce.product.dto.request.ProductSimpleListRequestDto;
 import com.tunaforce.product.dto.request.ProductSimpleReduceStockRequestDto;
-import com.tunaforce.product.dto.response.ProductUpdateOrderQuantityResponseDto;
+import com.tunaforce.product.dto.request.ProductUpdateOrderQuantityRequestDto;
 import com.tunaforce.product.dto.response.ProductSimpleListResponseDto;
-import com.tunaforce.product.dto.response.ProductSimpleResponseDto;
 import com.tunaforce.product.dto.response.ProductSimpleReduceStockResponseDto;
+import com.tunaforce.product.dto.response.ProductSimpleResponseDto;
+import com.tunaforce.product.dto.response.ProductUpdateOrderQuantityResponseDto;
 import com.tunaforce.product.service.ProductInternalService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -41,7 +41,7 @@ public class ProductInternalController {
                 .body(data);
     }
 
-    @PatchMapping("/{productId}/reduce-stock")
+    @PostMapping("/{productId}/reduce-stock")
     public ResponseEntity<ProductSimpleReduceStockResponseDto> reduceStock(
             @PathVariable UUID productId,
             @RequestBody ProductSimpleReduceStockRequestDto productSimpleReduceStockRequestDto
@@ -52,7 +52,7 @@ public class ProductInternalController {
                 .body(data);
     }
 
-    @PatchMapping("/{productId}/update-order-quantity")
+    @PostMapping("/{productId}/update-order-quantity")
     public ResponseEntity<ProductUpdateOrderQuantityResponseDto> updateOrderQuantity(
             @PathVariable UUID productId,
             @RequestBody ProductUpdateOrderQuantityRequestDto productUpdateOrderQuantityRequestDto

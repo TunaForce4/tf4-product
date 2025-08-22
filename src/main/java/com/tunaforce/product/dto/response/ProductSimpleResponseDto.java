@@ -6,6 +6,8 @@ import java.util.UUID;
 
 public record ProductSimpleResponseDto(
         UUID productId,
+        UUID companyId,
+        UUID hubId,
         String productName
 ) {
 

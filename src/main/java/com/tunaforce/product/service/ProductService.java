@@ -11,7 +11,6 @@ import com.tunaforce.product.entity.Product;
 import com.tunaforce.product.entity.UserRole;
 import com.tunaforce.product.repository.feign.company.CompanyFeignClient;
 import com.tunaforce.product.repository.feign.company.dto.request.CompanyFIndInfosRequestDto;
-import com.tunaforce.product.repository.feign.company.dto.request.CompanyFindInfoListRequestDto;
 import com.tunaforce.product.repository.feign.company.dto.response.CompanyFindInfoListResponseDto;
 import com.tunaforce.product.repository.feign.company.dto.response.CompanyFindInfoResponseDto;
 import com.tunaforce.product.repository.feign.hub.HubFeignClient;
@@ -21,6 +20,7 @@ import com.tunaforce.product.repository.jpa.ProductJpaRepository;
 import com.tunaforce.product.repository.querydsl.ProductQuerydslRepository;
 import com.tunaforce.product.repository.querydsl.dto.response.ProductDetailsQuerydslResponseDto;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductService {
@@ -156,16 +157,16 @@ public class ProductService {
 
         CompanyFindInfoResponseDto requestedCompany = companyFeignClient.findCompanyInfoByCompanyId(request.companyId());
 
-        // 등록 요청한 업체가 요청한 허브의 소속 업체인지 확인
+        // 등록 업체가 요청한 허브의 소속 업체인지 확인
         validateUuidMatch(request.hubId(), requestedCompany.hubId());
 
-        // 허브 담당자의 경우 - 로그인한 유저의 허브 Id와 등록 요청한 허브 Id 확인
+        // 허브 담당자의 경우 - 등록 업체가 본인 허브 소속이면 상품 등록 가능
         if (role.equals(UserRole.HUB)) {
             HubFindInfoResponseDto userHub = hubFeignClient.findHubInfoByUserId(userId);
             validateUuidMatch(userHub.hubId(), requestedCompany.hubId());
         }
 
-        // 업체 담당자의 경우 - 로그인한 유저의 업체 Id와 등록 요청한 업체 Id 확인
+        // 업체 담당자의 경우 - 등록 업체가 본인 업체이면 상품 등록 가능
         if (role.equals(UserRole.COMPANY)) {
             CompanyFindInfoResponseDto userCompany = companyFeignClient.findCompanyInfoByUserId(userId);
             validateUuidMatch(userCompany.companyId(), requestedCompany.companyId());
@@ -176,11 +177,13 @@ public class ProductService {
      * 상품 단건 조회 유저 권한 검증
      */
     private void validateFindProductDetailsByAuthority(UUID productHubId, UUID productCompanyId, UUID userId, UserRole userRole) {
+        // 허브 담당자의 경우 - 본인 허브 소속 업체들이 등록한 상품만 조회 가능
         if (userRole.equals(UserRole.HUB)) {
             HubFindInfoResponseDto userHub = hubFeignClient.findHubInfoByUserId(userId);
             validateUuidMatch(userHub.hubId(), productHubId);
         }
 
+        // 업체 담당자의 경우 - 본인 업체가 등록한 상품만 조회 가능
         if (userRole.equals(UserRole.COMPANY)) {
             CompanyFindInfoResponseDto userCompany = companyFeignClient.findCompanyInfoByUserId(userId);
             validateUuidMatch(userCompany.companyId(), productCompanyId);
@@ -191,11 +194,12 @@ public class ProductService {
      * 특정 허브 소속 업체들의 등록 상품에 대한 권한별 조회
      */
     private void validateFindHubPageByAuthority(UUID requestedHubId, UUID userId, UserRole userRole) {
+        // 업체/배송 담당자의 경우 - 허브 등록 상품 목록을 조회할 수 없음
         if (userRole.equals(UserRole.COMPANY) || userRole.equals(UserRole.DELIVERY)) {
             throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
         }
 
-        // 로그인한 유저가 허브 담당자 일 때 요청한 허브에 접근 가능한지 확인
+        // 허브 담당자의 경우 - 본인 허브 소속 업체들의 등록 상품 목록만 조회 가능
         if (userRole.equals(UserRole.HUB)) {
             HubFindInfoResponseDto userHub = hubFeignClient.findHubInfoByUserId(userId);
             validateUuidMatch(userHub.hubId(), requestedHubId);
@@ -206,18 +210,19 @@ public class ProductService {
      * 특정 업체의 등록 상품에 대한 권한별 조회
      */
     private void validateFindCompanyProductPageByAuthority(UUID requestedCompanyId, UUID userId, UserRole userRole) {
+        // 배송 담당자의 경우 - 업체 등록 상품 목록을 조회할 수 없음
         if (userRole.equals(UserRole.DELIVERY)) {
             throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
         }
 
-        // 로그인한 유저가 허브 담당자 일 때 요청한 업체가 소속 업체인지 확인
+        // 허브 담당자의 경우 - 본인 소속 업체의 등록 상품 목록만 조회 가능
         if (userRole.equals(UserRole.HUB)) {
             HubFindInfoResponseDto userHub = hubFeignClient.findHubInfoByUserId(userId);
             CompanyFindInfoResponseDto requestedCompany = companyFeignClient.findCompanyInfoByCompanyId(requestedCompanyId);
             validateUuidMatch(userHub.hubId(), requestedCompany.hubId());
         }
 
-        // 로그인한 유저가 업체 담당자 일 때 자신의 업체인지 확인
+        // 업체 담당자의 경우 - 본인 업체의 등록 상품 목록만 조회 가능
         if (userRole.equals(UserRole.COMPANY)) {
             CompanyFindInfoResponseDto userCompany = companyFeignClient.findCompanyInfoByUserId(userId);
             validateUuidMatch(userCompany.companyId(), requestedCompanyId);
@@ -233,15 +238,18 @@ public class ProductService {
             UUID userId,
             UserRole role
     ) {
+        // 배송 담당자의 경우 - 상품 수정 불가능
         if (role.equals(UserRole.DELIVERY)) {
             throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
         }
 
+        // 허브 담당자의 경우 - 본인 허브 소속 업체의 등록 상품에 대해서 수정 가능
         if (role.equals(UserRole.HUB)) {
             HubFindInfoResponseDto userHub = hubFeignClient.findHubInfoByUserId(userId);
             validateUuidMatch(userHub.hubId(), productHubId);
         }
 
+        // 업체 담당자의 경우 - 본인 업체의 등록 상품에 대해서 수정 가능
         if (role.equals(UserRole.COMPANY)) {
             CompanyFindInfoResponseDto userCompany = companyFeignClient.findCompanyInfoByUserId(userId);
             validateUuidMatch(userCompany.companyId(), productCompanyId);
@@ -252,11 +260,12 @@ public class ProductService {
      * 상품 삭제 유저 권한 검증
      */
     private void validateDeleteProductByAuthority(UUID productHubId, UUID userId, UserRole role) {
-        // 등록 상품 삭제는 마스터 또는 허브 관리자만 가능
+        // 업체/배송 담당자의 경우 - 상품 삭제 불가능
         if (role.equals(UserRole.COMPANY) || role.equals(UserRole.DELIVERY)) {
             throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
         }
 
+        // 허브 담당자의 경우 - 본인 소속 업체의 상품만 삭제 가능
         if (role.equals(UserRole.HUB)) {
             HubFindInfoResponseDto hubInfo = hubFeignClient.findHubInfoByUserId(userId);
             validateUuidMatch(hubInfo.hubId(), productHubId);
@@ -267,6 +276,7 @@ public class ProductService {
      * 두 UUID 값을 비교, 두 값이 다르면 throw ACCESS_DENIED exception
      */
     private void validateUuidMatch(UUID expectedId, UUID actualId) {
+        log.info("Checking uuid match {}, {}", expectedId, actualId);
         if (!expectedId.equals(actualId)) {
             throw new CustomRuntimeException(ProductException.ACCESS_DENIED);
         }
@@ -315,9 +325,12 @@ public class ProductService {
 
 //        HubFindInfoListRequestDto requestDto = HubFindInfoListRequestDto.from(hubSet.stream().toList());
 //        HubFindInfoListResponseDto hubs = hubFeignClient.findHubInfoListByHubIds(requestDto);
-        HubFindInfoListResponseDto hubs = hubFeignClient.findHubInfoAll(0, 0);
+        log.info("Checking hubs {}", hubSet);
+        List<HubFindInfoResponseDto> hubs = hubFeignClient.findHubInfoAll(0, 20);
 
-        return hubs.toMap();
+        return hubs.stream().collect(Collectors.toMap(
+                HubFindInfoResponseDto::hubId, HubFindInfoResponseDto::hubName
+        ));
     }
 
     /**
@@ -328,9 +341,10 @@ public class ProductService {
             return Collections.emptyMap();
         }
 
-        CompanyFindInfoListResponseDto companies = companyFeignClient.findCompanyInfoListByCompanyIds(new CompanyFIndInfosRequestDto(
-                companySet.stream().toList()
-        ));
+        CompanyFindInfoListResponseDto companies = companyFeignClient.findCompanyInfoListByCompanyIds(
+                new CompanyFIndInfosRequestDto(
+                        companySet.stream().toList()
+                ));
 
         return companies.toMap();
     }
